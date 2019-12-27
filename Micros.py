@@ -20,6 +20,8 @@ import PyQt5.QtGui as QtGui
 from PyQt5.QtCore import Qt, QSize, QEvent, QPoint
 from PyQt5.Qt import pyqtSignal
 from lxml import etree
+
+from SettingsDialog import SettingsDialog, ProgramSettings
 #import tkMessageB as mbox
 
 import xml.etree.cElementTree as ET
@@ -70,7 +72,7 @@ class RectF(object):
 
 
 
-#Данные сканирования
+# Данные сканирования
 class SavedData(object):
     def __init__(self, folder):
         self.filePath = ""
@@ -78,19 +80,22 @@ class SavedData(object):
         self.rowCount = 0
         self.colCount = 0
         self.format = "jpg"
-        #Размер исходника картинки
+        # Размер исходника картинки
         self.imgSize = Size()
-        #Размер обрезанного изображения
+        # Размер обрезанного изображения
         self.connectionArea = Rect()
-        #Коодридаты обрезанных изображений на склейке
+        # Коодридаты обрезанных изображений на склейке
         self.arrayImagesSize = []
+        # Держать ли в памяти все изображение
+        self.allImageInMemory = False
         
-    #Подготовка обрезанных файлов изображения и уменьшенных файлов изображения
+    # Подготовка обрезанных файлов изображения и уменьшенных файлов изображения
     def prepareScans(self, replace = False):
         minimap = np.zeros(0)
         minimapNeedCreate = replace or not os.path.exists(os.path.join(self.folder, "mini.jpg"))
+        modiefed = minimapNeedCreate
         for i in range (self.rowCount):
-            #Вычисление размера частей картинок, нужных для склейки между собой
+            # Вычисление размера частей картинок, нужных для склейки между собой
             y1 = self.connectionArea.y
             if i == 0:
                 y1 = 0
@@ -112,6 +117,7 @@ class SavedData(object):
                     imgS = cv2.imread(os.path.join(self.folder, "S_" + str(i+1) + "_" + str(j+1) + ".jpg"))
                     imgP = np.copy(img[y1:y2, x1:x2, :])
                     cv2.imwrite(os.path.join(self.folder, "P_" + str(i+1) + "_" + str(j+1) + ".jpg"), imgP)
+                    modiefed = True
                 if imgP.shape[0] == 0:
                     imgP = cv2.imread(os.path.join(self.folder, "P_" + str(i+1) + "_" + str(j+1) + ".jpg"))
                 if imgP.shape[0] == 0:
@@ -126,6 +132,7 @@ class SavedData(object):
                     dim2 = (int(imgP.shape[1] / 4), int(imgP.shape[0] / 4))
                     imgP2 = cv2.resize(imgP1, dim2, interpolation = cv2.INTER_AREA)
                     cv2.imwrite(self.folder + "P2_" + str(i+1) + "_" + str(j+1) + ".jpg", imgP2)
+                    modiefed = True
                     
                 if minimapNeedCreate:
                     if imgP2.rowCount == 0:
@@ -142,6 +149,8 @@ class SavedData(object):
 
         if minimapNeedCreate:
             cv2.imwrite(os.path.join(self.folder, "mini.jpg"), minimap)
+
+        return modiefed
         """
         if not replace and (not os.path.exists(self.Folder + "P_" + str(i+1) + "_" + str(j+1) + ".jpg") or not os.path.exists(self.Folder + "P1_" + str(i+1) + "_" + str(j+1) + ".jpg") or not os.path.exists(self.Folder + "P2_" + str(i+1) + "_" + str(j+1) + ".jpg")):
             imgS = cv2.imread(self.Folder + "S_" + str(i+1) + "_" + str(j+1) + ".jpg")
@@ -164,6 +173,8 @@ class SavedData(object):
             root.append(apptI)
             formatt = xml.SubElement(apptI, "Format")
             formatt.text = self.format
+            #isAllImageInMemory = xml.SubElement(apptI, "AllImageInMemory")
+            #isAllImageInMemory.text = str(self.allImageInMemory)
             imgSize = xml.SubElement(apptI, "ImgSize")
             isWidth = xml.SubElement(imgSize, "Width")
             isWidth.text = str(self.imgSize.width)
@@ -178,8 +189,9 @@ class SavedData(object):
             caWidth.text = str(self.connectionArea.width)
             caHeight = xml.SubElement(conArea, "Height")
             caHeight.text = str(self.connectionArea.height)
+            
             tree = xml.ElementTree(root)
-            with open(xmlFile, "w") as fh:
+            with open(xmlFile, "w") as fobj:
                 tree.write(xmlFile)
             return True
         except Exception:
@@ -200,6 +212,8 @@ class SavedData(object):
                     for elem in appt.getchildren():
                         if elem.tag == "Format":
                             self.format = appt.text
+                        #elif elem.tag == "AllImageInMemory":
+                        #    self.allImageInMemory = bool(appt.text)
                         elif elem.tag == "ImgSize":
                             for subelem in elem.getchildren():
                                 if subelem.tag == "Width":
@@ -524,8 +538,6 @@ class ImageStatus(Enum):
 
 #Главное окно
 class MainWindow(QMainWindow):
-    
-
     def __init__(self):
         super().__init__()
         self.savedData = SavedData("")
@@ -548,6 +560,33 @@ class MainWindow(QMainWindow):
         self.modiefed = False
         self.minScale = 0.001
         self.maxScale = 10.0
+        self.programSettings = ProgramSettings()
+        
+        self.configFilePath = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "Config.xml")
+        self.loadConfig()
+        
+    
+    def saveConfig(self):
+        root = xml.Element("Root")
+        apptRC = xml.Element("FullLoadImageMemoryLimit")
+        apptRC.text = "1024*1024*1024"
+        root.append(apptRC)
+        tree = xml.ElementTree(root)
+        with open(self.configFilePath, "w") as fobj:
+            tree.write(self.configFilePath)
+        
+
+    def loadConfig(self):
+        if os.path.exists(self.configFilePath):
+            with open(self.configFilePath) as fobj:
+                xml = fobj.read()
+                root = etree.fromstring(xml)
+                for appt in root.getchildren():
+                    if appt.tag == "FullLoadImageMemoryLimit":
+                        self.programSettings.fullLoadImageMemoryLimit = eval(appt.text)
+        else:
+            self.saveConfig()                
+        return            
     
     def imageMove(self, pos = QPoint()):
         if self.status == ImageStatus.Move:
@@ -576,7 +615,7 @@ class MainWindow(QMainWindow):
                 if self.status == ImageStatus.Move:
                     self.imageMove(event.pos())
             elif event.type() == QEvent.Wheel:
-                self.setWindowTitle(str(event.angleDelta().y()) + "; pos: " + str(event.pos()))
+                #self.setWindowTitle(str(event.angleDelta().y()) + "; pos: " + str(event.pos()))
                 if event.modifiers() & Qt.ControlModifier:
                     newScale = self.scaleEdit.value() * (1000 + event.angleDelta().y()) / 1000
                 elif event.modifiers() & Qt.ShiftModifier:
@@ -607,7 +646,7 @@ class MainWindow(QMainWindow):
             elif event.type() == QEvent.MouseButtonRelease:
                 self.status = ImageStatus.Idle
             elif event.type() == QEvent.MouseMove:
-                self.setWindowTitle(str(event.pos()))
+                #self.setWindowTitle(str(event.pos()))
                 self.status = ImageStatus.MinimapMove
                 if self.savedData.rowCount > 0:
                     self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y / self.minimapLabel.size().height() - 0.5 * self.imLabel.size().height() / self.imageView.scale
@@ -659,23 +698,24 @@ class MainWindow(QMainWindow):
                         return
                 
             else:
-                return    
-
-            if self.savedData.saveToFileXML(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, "settings.xml")):
-                self.savedData.folder = self.EXTRACT_TEMP_SUBFOLDER
-            else:
-                self.errDlg = QErrorMessage()
-                self.errDlg.setWindowTitle("Ошибка")
-                self.errDlg.showMessage("Произошла непредвиденная ошибка записи файла!")
                 return
 
-            z = zipfile.ZipFile(self.fileName, 'w')
-            for root, dirs, files in os.walk(self.EXTRACT_TEMP_SUBFOLDER):
-                for file in files:    
-                    if file:
-                        z.write(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, file), file, compress_type = zipfile.ZIP_DEFLATED)
-            self.modiefed = False
-            dlgResult = QMessageBox.question(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
+        if self.savedData.saveToFileXML(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, "settings.xml")):
+            self.savedData.folder = self.EXTRACT_TEMP_SUBFOLDER
+        else:
+            self.errDlg = QErrorMessage()
+            self.errDlg.setWindowTitle("Ошибка")
+            self.errDlg.showMessage("Произошла непредвиденная ошибка записи файла!")
+            return
+
+        z = zipfile.ZipFile(self.fileName, 'w')
+        for root, dirs, files in os.walk(self.EXTRACT_TEMP_SUBFOLDER):
+            for file in files:    
+                if file:
+                    z.write(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, file), file, compress_type = zipfile.ZIP_DEFLATED)
+        self.modiefed = False
+        self.setWindowTitle("Micros - " + self.fileName)
+        dlgResult = QMessageBox.question(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
             
     def openFile(self):
         selfilter = "Microscope scans (*.misc)"
@@ -698,6 +738,7 @@ class MainWindow(QMainWindow):
                 self.fileName = a[0]
                 self.modiefed = False
                 self.resized()
+                self.setWindowTitle("Micros - " + self.fileName)
             else:
                 self.errDlg = QErrorMessage()
                 self.errDlg.setWindowTitle("Ошибка")
@@ -710,7 +751,7 @@ class MainWindow(QMainWindow):
             self.minimapLabel.hide()
 
     def prepareScans(self):
-        self.savedData.prepareScans(True)
+        self.modiefed = self.savedData.prepareScans(True)
     
     def btn31_Click(self):
         koefSize = 0.30
@@ -773,9 +814,13 @@ class MainWindow(QMainWindow):
             self.rightDocWidget.show()
         else: 
             self.rightDocWidget.hide()
+    def servicesMenuSettings_Click(self):
+        settingsDialog = SettingsDialog()
+        settingsDialog.setAttribute(Qt.WA_DeleteOnClose)
+        settingsDialog.exec()
 
     def initUI(self):
-        #self.setWindowTitle('Micros')
+        self.setWindowTitle('Micros')
         # Основное меню
         menuBar = self.menuBar()
         # Меню "Файл"
@@ -817,6 +862,23 @@ class MainWindow(QMainWindow):
         self.viewMenuMainPanel.setChecked(True)
         viewMenu.addAction(self.viewMenuMainPanel)
         menuBar.addMenu(viewMenu)
+         # Меню "Настройки"
+        servicesMenu = menuBar.addMenu("&Сервис")
+        self.servicesMenuSettings = QAction("Настройки", self)
+        self.servicesMenuSettings.setStatusTip("Изменить основные настройки программы")
+        self.servicesMenuSettings.triggered.connect(self.servicesMenuSettings_Click)
+        servicesMenu.addAction(self.servicesMenuSettings)
+        menuBar.addMenu(servicesMenu)
+        #self.viewMenuMainPanel = QAction("Основная &панель", self)
+        #self.viewMenuMainPanel.setShortcut("Ctrl+T")
+        #self.viewMenuMainPanel.setStatusTip("Отображать основную панель")
+        #self.viewMenuMainPanel.triggered.connect(self.viewMenuMainPanel_Click)
+        #self.viewMenuMainPanel.setCheckable(True)
+        #self.viewMenuMainPanel.setChecked(True)
+        #viewMenu.addAction(self.viewMenuMainPanel)
+        
+
+
         # Элементы формы
         
         # Левые элементы
@@ -861,7 +923,7 @@ class MainWindow(QMainWindow):
         #self.imLabel.resized.connect(self.imLabel_Resize)
         self.imLabel.installEventFilter(self)
 
-        self.setWindowTitle(str(self.imLabel.size().width()) + "x" + str(self.imLabel.size().height()))
+        #self.setWindowTitle(str(self.imLabel.size().width()) + "x" + str(self.imLabel.size().height()))
         #self.setWindowTitle(str(random.randint(1,44)))
         
         centralLayout.addWidget(self.imLabel)
