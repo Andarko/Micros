@@ -613,7 +613,9 @@ class MainWindow(QMainWindow):
                     self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y / self.minimapLabel.size().height() - 0.5 * self.imLabel.size().height() / self.imageView.scale
                     self.imageView.offset.x = event.pos().x() * self.savedData.arrayImagesSize[0][0][-1].x / self.minimapLabel.size().width() - 0.5 * self.imLabel.size().width() / self.imageView.scale
                     self.setNewView()
-
+        elif obj is self.rightDocWidget:
+            if event.type() == QEvent.Hide:
+                self.viewMenuMainPanel.setChecked(False)
         return QMainWindow.eventFilter(self, obj, event)
 
     def resized(self):
@@ -766,6 +768,12 @@ class MainWindow(QMainWindow):
     def scaleEdit_Change(self):
         self.setNewView()
 
+    def viewMenuMainPanel_Click(self):
+        if self.viewMenuMainPanel.isChecked():
+            self.rightDocWidget.show()
+        else: 
+            self.rightDocWidget.hide()
+
     def initUI(self):
         #self.setWindowTitle('Micros')
         # Основное меню
@@ -780,27 +788,34 @@ class MainWindow(QMainWindow):
         fileMenu.addSeparator()
         fileMenuAOpen = QAction("&Открыть", self)
         fileMenuAOpen.setShortcut("Ctrl+O")
-        fileMenuAOpen.setStatusTip("Открыть существующие файлы сканирования")
+        fileMenuAOpen.setStatusTip("Открыть существующее изображение")
         fileMenuAOpen.triggered.connect(self.openFile)
         fileMenu.addAction(fileMenuAOpen)
         fileMenu.addSeparator()
         fileMenuASave = fileMenu.addAction("&Сохранить")
         fileMenuASave.setShortcut("Ctrl+S")
-        fileMenuASave.setStatusTip("Сохранить")
+        fileMenuASave.setStatusTip("Сохранить изменения")
         fileMenuASave.triggered.connect(self.saveFile)
         fileMenuASaveAss = fileMenu.addAction("Сохранить как...")
         fileMenuASaveAss.setShortcut("Ctrl+Shift+S")
-        fileMenuASaveAss.setStatusTip("Save scan in to another file...")
+        fileMenuASaveAss.setStatusTip("Сохранить текущее изображение в другом файле...")
         fileMenuASaveAss.triggered.connect(self.saveFileAss)
         fileMenu.addSeparator()
-        fileMenuAExit = QAction("&Exit", self)
+        fileMenuAExit = QAction("&Выйти", self)
         fileMenuAExit.setShortcut("Ctrl+Q")
-        fileMenuAExit.setStatusTip("Exit application")
+        fileMenuAExit.setStatusTip("Закрыть приложение")
         fileMenuAExit.triggered.connect(self.close)
         fileMenu.addAction(fileMenuAExit)
         menuBar.addMenu(fileMenu)
         # Меню "Вид"
-        viewMenu = menuBar.addMenu("&View")
+        viewMenu = menuBar.addMenu("&Вид")
+        self.viewMenuMainPanel = QAction("Основная &панель", self)
+        self.viewMenuMainPanel.setShortcut("Ctrl+T")
+        self.viewMenuMainPanel.setStatusTip("Отображать основную панель")
+        self.viewMenuMainPanel.triggered.connect(self.viewMenuMainPanel_Click)
+        self.viewMenuMainPanel.setCheckable(True)
+        self.viewMenuMainPanel.setChecked(True)
+        viewMenu.addAction(self.viewMenuMainPanel)
         menuBar.addMenu(viewMenu)
         # Элементы формы
         
@@ -879,8 +894,8 @@ class MainWindow(QMainWindow):
         centralLayout.addWidget(messageEdit)
         #mainLayout.addLayout(centralLayout)
         # Правые элементы
-        rightDocWidget = QDockWidget("Dock Widget")
-        rightDocWidget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.rightDocWidget = QDockWidget("Dock Widget", self)
+        self.rightDocWidget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         rightLayout = QVBoxLayout(self)
         
         btn31 = QPushButton("MegaImg", self)
@@ -914,14 +929,15 @@ class MainWindow(QMainWindow):
 
         rightDockWidgetContents = QWidget()
         rightDockWidgetContents.setLayout(rightLayout)
-        #rightDocWidget.setLayout(rightLayout)
-        rightDocWidget.setWidget(rightDockWidgetContents)
+        #self.rightDocWidget.setLayout(rightLayout)
+        self.rightDocWidget.setWidget(rightDockWidgetContents)
+        self.rightDocWidget.installEventFilter(self)
         
         #mainLayout.addLayout(rightLayout)
         
 
         self.setCentralWidget(mainWidget)
-        self.addDockWidget(Qt.RightDockWidgetArea, rightDocWidget)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.rightDocWidget)
 
         self.statusBar().setStatusTip("Ready")
 
