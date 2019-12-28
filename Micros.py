@@ -88,7 +88,28 @@ class SavedData(object):
         self.arrayImagesSize = []
         # Держать ли в памяти все изображение
         self.allImageInMemory = False
-        
+        #Изображения в памяти
+        self.arrayLoadImages = []
+
+    def setAllImageInMemory(self, newValue):
+        self.allImageInMemory = newValue
+        if newValue:
+            self.arrayLoadImages = []
+            for k in range(3):
+                layer = []
+                prefix = "P"
+                if k > 0:
+                    prefix += str(k)
+                prefix += "_"    
+                for i in range(self.rowCount):
+                    row = []
+                    for j in range(self.colCount):
+                        row.append(cv2.imread(os.path.join(self.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1])
+                    layer.append(row)    
+                self.arrayLoadImages.append(layer)
+        else:    
+            self.arrayLoadImages = []
+
     # Подготовка обрезанных файлов изображения и уменьшенных файлов изображения
     def prepareScans(self, replace = False):
         minimap = np.zeros(0)
@@ -292,13 +313,20 @@ class ImageView(object):
         self.curRect = Rect(-1, -1, 0, 0)
 
     # Легкий вариант получения сшитого изображения простым сшитием всех кусков
-    def easyMerge(self, prefix = "P_", newRect = Rect()):
+    def easyMerge(self, newScaleIndex = 0, newRect = Rect()):
+        prefix = "P"
+        if newScaleIndex > 0:
+            prefix += str(newScaleIndex)
+        prefix += "_"  
         self.savedDataClear()
         self.sumImg = np.zeros((0), dtype = np.uint8)
         for i in range (newRect.y, newRect.y + newRect.height):
             rowImg = np.zeros((0), dtype = np.uint8)
             for j in range (newRect.x, newRect.x + newRect.width):
-                img = cv2.imread(os.path.join(self.savedData.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1]
+                if self.savedData.allImageInMemory:
+                    img = self.savedData.arrayLoadImages[newScaleIndex][i][j]
+                else:
+                    img = cv2.imread(os.path.join(self.savedData.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1]
                 if rowImg.size == 0:
                     #rowImg = np.copy(img)
                     rowImg = img
@@ -330,7 +358,7 @@ class ImageView(object):
         
         if intersectRect.width <= 0 or intersectRect.height <= 0:
             # Отрисовываем соединенную картинку простым способом
-            self.easyMerge(prefix, newRect)
+            self.easyMerge(newScaleIndex, newRect)
         elif newRect.width > 0 and newRect.height > 0:
             # 1. Вырезаем видимую часть старого изображения
             firstAreaOfIntersectRect = self.savedData.arrayImagesSize[newScaleIndex][intersectRect.y][intersectRect.x]
@@ -347,7 +375,10 @@ class ImageView(object):
             for j in range(newRect.x, intersectRect.x):
                 tempColumn = np.zeros(0, dtype=np.uint8)
                 for i in range(intersectRect.y, intersectRect.y + intersectRect.height):
-                    img = cv2.imread(os.path.join(self.savedData.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1]
+                    if self.savedData.allImageInMemory:
+                        img = self.savedData.arrayLoadImages[newScaleIndex][i][j]
+                    else:
+                        img = cv2.imread(os.path.join(self.savedData.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1]
                     if tempColumn.size == 0:
                         tempColumn = img
                     else:
@@ -365,7 +396,10 @@ class ImageView(object):
             for j in range(intersectRect.x + intersectRect.width, newRect.x + newRect.width):
                 tempColumn = np.zeros(0, dtype=np.uint8)
                 for i in range(intersectRect.y, intersectRect.y + intersectRect.height):
-                    img = cv2.imread(os.path.join(self.savedData.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1]
+                    if self.savedData.allImageInMemory:
+                        img = self.savedData.arrayLoadImages[newScaleIndex][i][j]
+                    else:
+                        img = cv2.imread(os.path.join(self.savedData.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1]
                     if tempColumn.size == 0:
                         tempColumn = img
                     else:
@@ -381,7 +415,10 @@ class ImageView(object):
             for i in range(newRect.y, intersectRect.y):
                 tempRow = np.zeros(0, dtype=np.uint8)
                 for j in range(newRect.x, newRect.x + newRect.width):
-                    img = cv2.imread(os.path.join(self.savedData.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1]
+                    if self.savedData.allImageInMemory:
+                        img = self.savedData.arrayLoadImages[newScaleIndex][i][j]
+                    else:
+                        img = cv2.imread(os.path.join(self.savedData.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1]
                     if tempRow.size == 0:
                         tempRow = img
                     else:
@@ -399,7 +436,10 @@ class ImageView(object):
             for i in range(intersectRect.y + intersectRect.height, newRect.y + newRect.height):
                 tempRow = np.zeros(0, dtype=np.uint8)
                 for j in range(newRect.x, newRect.x + newRect.width):
-                    img = cv2.imread(os.path.join(self.savedData.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1]
+                    if self.savedData.allImageInMemory:
+                        img = self.savedData.arrayLoadImages[newScaleIndex][i][j]
+                    else:
+                        img = cv2.imread(os.path.join(self.savedData.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1]
                     if tempRow.size == 0:
                         tempRow = img
                     else:
@@ -583,7 +623,10 @@ class MainWindow(QMainWindow):
                 root = etree.fromstring(xml)
                 for appt in root.getchildren():
                     if appt.tag == "FullLoadImageMemoryLimit":
-                        self.programSettings.fullLoadImageMemoryLimit = eval(appt.text)
+                        memLimitText = appt.text
+                        for ch in "xXхХ":
+                            memLimitText = memLimitText.replace(ch, "*")
+                        self.programSettings.fullLoadImageMemoryLimit = eval(memLimitText)
         else:
             self.saveConfig()                
         return            
@@ -593,7 +636,6 @@ class MainWindow(QMainWindow):
             self.imageView.offset.x = self.startMousePos.x - pos.x() / self.imageView.scale
             self.imageView.offset.y = self.startMousePos.y - pos.y() / self.imageView.scale
             self.setNewView()
-    
 
 
     # Обработчики событий формы и ее компонентов
@@ -732,11 +774,18 @@ class MainWindow(QMainWindow):
             os.mkdir(self.EXTRACT_TEMP_SUBFOLDER)
             z = zipfile.PyZipFile(a[0])
             z.extractall(self.EXTRACT_TEMP_SUBFOLDER)
+            sumSize = 0
+            for f in os.listdir(self.EXTRACT_TEMP_SUBFOLDER):
+                if os.path.isfile(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, f)):
+                    sumSize += os.path.getsize(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, f)) 
+            
             if self.savedData.loadFromFileXML(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, "settings.xml")):
-                self.savedData.folder = self.EXTRACT_TEMP_SUBFOLDER
+                self.savedData.folder = self.EXTRACT_TEMP_SUBFOLDER 
                 self.imageView.minimapBase = cv2.imread(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, "mini.jpg"), cv2.IMREAD_COLOR)[:, :, ::-1]
                 self.fileName = a[0]
                 self.modiefed = False
+                self.savedData.setAllImageInMemory(sumSize <= self.programSettings.fullLoadImageMemoryLimit)
+                self.servicesMenuAllInMemory.setChecked(sumSize <= self.programSettings.fullLoadImageMemoryLimit)
                 self.resized()
                 self.setWindowTitle("Micros - " + self.fileName)
             else:
@@ -814,10 +863,16 @@ class MainWindow(QMainWindow):
             self.rightDocWidget.show()
         else: 
             self.rightDocWidget.hide()
+
     def servicesMenuSettings_Click(self):
         settingsDialog = SettingsDialog()
         settingsDialog.setAttribute(Qt.WA_DeleteOnClose)
         settingsDialog.exec()
+
+    def servicesMenuAllInMemory_Click(self):
+        self.savedData.setAllImageInMemory(self.servicesMenuAllInMemory.isChecked())
+        self.resized()
+
 
     def initUI(self):
         self.setWindowTitle('Micros')
@@ -864,6 +919,14 @@ class MainWindow(QMainWindow):
         menuBar.addMenu(viewMenu)
          # Меню "Настройки"
         servicesMenu = menuBar.addMenu("&Сервис")
+        self.servicesMenuAllInMemory = QAction("&Буферизировать изображение", self)
+        self.servicesMenuAllInMemory.setShortcut("Ctrl+M")
+        self.servicesMenuAllInMemory.setStatusTip("Разместить все части изображения в памяти, что увеличит скорость навигации по нему")
+        self.servicesMenuAllInMemory.triggered.connect(self.servicesMenuAllInMemory_Click)
+        self.servicesMenuAllInMemory.setCheckable(True)
+        self.servicesMenuAllInMemory.setChecked(False)
+        servicesMenu.addAction(self.servicesMenuAllInMemory)
+        servicesMenu.addSeparator()
         self.servicesMenuSettings = QAction("Настройки", self)
         self.servicesMenuSettings.setStatusTip("Изменить основные настройки программы")
         self.servicesMenuSettings.triggered.connect(self.servicesMenuSettings_Click)
