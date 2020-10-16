@@ -5,12 +5,10 @@ import random
 import uuid
 import shutil
 from enum import Enum
-#from dataclasses import dataclass
 import numpy as np
 import os.path
 import tempfile
 import zipfile
-#import PyQt5.QtWidgets
 from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QTreeView, QHBoxLayout, QVBoxLayout, QLabel
 from PyQt5.QtWidgets import QFileSystemModel, QMenuBar, QMenu, QMainWindow, QPushButton, QAction, qApp
 from PyQt5.QtWidgets import QTextEdit, QSizePolicy, QGridLayout, QStyle, QFrame, QErrorMessage, QCheckBox
@@ -18,43 +16,35 @@ from PyQt5.QtWidgets import QLineEdit, QSpinBox, QDoubleSpinBox, QMessageBox, QD
 from PyQt5.QtGui import QIcon, QPixmap, QImage
 import PyQt5.QtGui as QtGui
 from PyQt5.QtCore import Qt, QSize, QEvent, QPoint
-from PyQt5.Qt import pyqtSignal
 from lxml import etree
 
 from SettingsDialog import SettingsDialog, ProgramSettings
-#import tkMessageB as mbox
-
-import xml.etree.cElementTree as ET
 import xml.etree.ElementTree as xml
-import xml.dom.minidom as minidom
-#from PyQt5.QtWidgets import QApplication, QtWidget, QFileDialog
-#from PyQt5.QtWidgets import QTreeView
-#from tkinter import *
-
-#window = Tk()
-#window.title("Добро пожаловать в приложение PythonRu")
-#window.mainloop()
 
 
 class Point(object):
     def __init__(self, x=0, y=0):
         self.x = x
-        self.y = y    
+        self.y = y
+
 
 class PointF(object):
     def __init__(self, x=0.0, y=0.0):
         self.x = x
-        self.y = y    
+        self.y = y
+
 
 class Size(object):
     def __init__(self, w=0, h=0):
         self.width = w
         self.height = h
 
+
 class SizeF(object):
     def __init__(self, w=0.0, h=0.0):
         self.width = w
-        self.height = h        
+        self.height = h
+
 
 class Rect(object):
     def __init__(self, x=0, y=0, w=0, h=0):
@@ -63,13 +53,13 @@ class Rect(object):
         self.width = w
         self.height = h
 
+
 class RectF(object):
     def __init__(self, x=0.0, y=0.0, w=0.0, h=0.0):
         self.x = x
         self.y = y
         self.width = w
         self.height = h
-
 
 
 # Данные сканирования
@@ -100,43 +90,43 @@ class SavedData(object):
                 prefix = "P"
                 if k > 0:
                     prefix += str(k)
-                prefix += "_"    
+                prefix += "_"
                 for i in range(self.rowCount):
                     row = []
                     for j in range(self.colCount):
                         row.append(cv2.imread(os.path.join(self.folder, prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1])
-                    layer.append(row)    
+                    layer.append(row)
                 self.arrayLoadImages.append(layer)
-        else:    
+        else:
             self.arrayLoadImages = []
 
     # Подготовка обрезанных файлов изображения и уменьшенных файлов изображения
-    def prepareScans(self, replace = False):
+    def prepareScans(self, replace=False):
         minimap = np.zeros(0)
         minimapNeedCreate = replace or not os.path.exists(os.path.join(self.folder, "mini.jpg"))
         modiefed = minimapNeedCreate
-        for i in range (self.rowCount):
+        for i in range(self.rowCount):
             # Вычисление размера частей картинок, нужных для склейки между собой
             y1 = self.connectionArea.y
             if i == 0:
                 y1 = 0
-            y2 = self.connectionArea.y + self.connectionArea.height  
+            y2 = self.connectionArea.y + self.connectionArea.height
             if i == self.rowCount - 1:
                 y2 = self.imgSize.height
 
-            minimapRow = np.zeros(0)    
-            for j in range (self.colCount):
-                imgP = np.zeros(0)   
+            minimapRow = np.zeros(0)
+            for j in range(self.colCount):
+                imgP = np.zeros(0)
                 #Подготовка основных (детализированных) изображений
                 if (replace or not os.path.exists(os.path.join(self.folder, "P_" + str(i+1) + "_" + str(j+1) + ".jpg"))) and os.path.exists(os.path.join(self.folder, "S_" + str(i+1) + "_" + str(j+1) + ".jpg")):
                     x1 = self.connectionArea.x
                     if j == 0:
                         x1 = 0
-                    x2 = self.connectionArea.x + self.connectionArea.width  
+                    x2 = self.connectionArea.x + self.connectionArea.width
                     if j == self.colCount - 1:
                         x2 = self.imgSize.width
                     imgS = cv2.imread(os.path.join(self.folder, "S_" + str(i+1) + "_" + str(j+1) + ".jpg"))
-                    imgP = np.copy(img[y1:y2, x1:x2, :])
+                    imgP = np.copy(imgS[y1:y2, x1:x2, :])
                     cv2.imwrite(os.path.join(self.folder, "P_" + str(i+1) + "_" + str(j+1) + ".jpg"), imgP)
                     modiefed = True
                 if imgP.shape[0] == 0:
@@ -148,25 +138,25 @@ class SavedData(object):
                 imgP2 = np.zeros(0)
                 if replace or not os.path.exists(os.path.join(self.folder, "P1_" + str(i+1) + "_" + str(j+1) + ".jpg")) or not os.path.exists(os.path.join(self.folder, "P2_" + str(i+1) + "_" + str(j+1) + ".jpg")):
                     dim1 = (int(imgP.shape[1] / 2), int(imgP.shape[0] / 2))
-                    imgP1 = cv2.resize(imgP, dim1, interpolation = cv2.INTER_AREA)
-                    cv2.imwrite(self.folder + "P1_" + str(i+1) + "_" + str(j+1) + ".jpg", imgP1)
+                    imgP1 = cv2.resize(imgP, dim1, interpolation=cv2.INTER_AREA)
+                    cv2.imwrite(os.path.join(self.folder, "P1_" + str(i+1) + "_" + str(j+1) + ".jpg"), imgP1)
                     dim2 = (int(imgP.shape[1] / 4), int(imgP.shape[0] / 4))
-                    imgP2 = cv2.resize(imgP1, dim2, interpolation = cv2.INTER_AREA)
-                    cv2.imwrite(self.folder + "P2_" + str(i+1) + "_" + str(j+1) + ".jpg", imgP2)
+                    imgP2 = cv2.resize(imgP1, dim2, interpolation=cv2.INTER_AREA)
+                    cv2.imwrite(os.path.join(self.folder, "P2_" + str(i+1) + "_" + str(j+1) + ".jpg"), imgP2)
                     modiefed = True
-                    
+
                 if minimapNeedCreate:
-                    if imgP2.rowCount == 0:
+                    if imgP2.size == 0:
                         imgP2 = cv2.imread(os.path.join(self.folder, "P2_" + str(i+1) + "_" + str(j+1) + ".jpg"))
                     if minimapRow.size == 0:
                         minimapRow = np.copy(imgP2)
                     else:
-                        minimapRow = np.concatenate((minimapRow, imgP2), axis=1)   
+                        minimapRow = np.concatenate((minimapRow, imgP2), axis=1)
             if minimapNeedCreate:
                 if minimap.size == 0:
                     minimap = np.copy(minimapRow)
                 else:
-                    minimap = np.concatenate((minimap, minimapRow), axis=0)    
+                    minimap = np.concatenate((minimap, minimapRow), axis=0)
 
         if minimapNeedCreate:
             cv2.imwrite(os.path.join(self.folder, "mini.jpg"), minimap)
@@ -210,7 +200,7 @@ class SavedData(object):
             caWidth.text = str(self.connectionArea.width)
             caHeight = xml.SubElement(conArea, "Height")
             caHeight.text = str(self.connectionArea.height)
-            
+
             tree = xml.ElementTree(root)
             with open(xmlFile, "w") as fobj:
                 tree.write(xmlFile)
@@ -250,7 +240,7 @@ class SavedData(object):
                                 elif subelem.tag == "X":
                                     self.connectionArea.x = int(subelem.text)
                                 elif subelem.tag == "Y":
-                                    self.connectionArea.y = int(subelem.text)        
+                                    self.connectionArea.y = int(subelem.text)
             self.filePath = xmlFile
             self.arrayImagesSize = []
             koef = 1
@@ -263,7 +253,7 @@ class SavedData(object):
                     if i == 0 or i == self.rowCount - 1:
                         dy = self.imgSize.height - self.connectionArea.y
                     elif i == self.rowCount:
-                        dy = 0  
+                        dy = 0
                     else:
                         dy = self.connectionArea.height
                     if k > 0:
@@ -281,18 +271,19 @@ class SavedData(object):
                         x += dx
                     y += dy
                     arrayArea.append(arrayRow)
-                self.arrayImagesSize.append(arrayArea) 
+                self.arrayImagesSize.append(arrayArea)
 
 
-            #self.reloadPrepareData() 
+            #self.reloadPrepareData()
             return True
-        except Exception:
+        except Exception as err:
+            print(err)
             return False
-    
+
 
 #Класс текущего отображения изображения
 class ImageView(object):
-    def __init__(self, savedData = SavedData("")):
+    def __init__(self, savedData=SavedData("")):
         # Данные изображения
         self.savedData = savedData
         # Загруженные куски изображения
@@ -317,7 +308,7 @@ class ImageView(object):
         prefix = "P"
         if newScaleIndex > 0:
             prefix += str(newScaleIndex)
-        prefix += "_"  
+        prefix += "_"
         self.savedDataClear()
         self.sumImg = np.zeros((0), dtype = np.uint8)
         for i in range (newRect.y, newRect.y + newRect.height):
@@ -332,30 +323,30 @@ class ImageView(object):
                     rowImg = img
                 else:
                     rowImg = np.concatenate((rowImg, img), axis=1)
-               
+
             if self.sumImg.size == 0:
                 #self.sumImg = np.copy(rowImg)
                 self.sumImg = rowImg
             else:
-                self.sumImg = np.concatenate((self.sumImg, rowImg), axis=0) 
+                self.sumImg = np.concatenate((self.sumImg, rowImg), axis=0)
 
     # Получение сшитого изображения
     def getNewPreView(self, newScaleIndex = 0, newRect = Rect()):
         prefix = "P"
         if newScaleIndex > 0:
             prefix += str(newScaleIndex)
-        prefix += "_"       
+        prefix += "_"
         if self.scaleIndex != newScaleIndex:
             self.scaleIndex = newScaleIndex
             self.savedDataClear()
-        
+
         intersectRect = Rect()
         if self.sumImg.shape[0] > 0 and newRect.width > 0 and newRect.height > 0:
             intersectRect.x = max(self.curRect.x, newRect.x)
             intersectRect.y = max(self.curRect.y, newRect.y)
             intersectRect.width = min(self.curRect.x + self.curRect.width, newRect.x + newRect.width) - intersectRect.x
             intersectRect.height = min(self.curRect.y + self.curRect.height, newRect.y + newRect.height) - intersectRect.y
-        
+
         if intersectRect.width <= 0 or intersectRect.height <= 0:
             # Отрисовываем соединенную картинку простым способом
             self.easyMerge(newScaleIndex, newRect)
@@ -382,16 +373,16 @@ class ImageView(object):
                     if tempColumn.size == 0:
                         tempColumn = img
                     else:
-                        tempColumn = np.concatenate((tempColumn, img), axis=0)    
+                        tempColumn = np.concatenate((tempColumn, img), axis=0)
                 if fullRow.size == 0:
                     fullRow = tempColumn
                 else:
-                    fullRow = np.concatenate((fullRow, tempColumn), axis=1)   
+                    fullRow = np.concatenate((fullRow, tempColumn), axis=1)
             # 2.2 Середину по горизонтали
             if fullRow.size == 0:
                 fullRow = intersectImg
             else:
-                fullRow = np.concatenate((fullRow, intersectImg), axis=1)  
+                fullRow = np.concatenate((fullRow, intersectImg), axis=1)
             # 2.3 Справа
             for j in range(intersectRect.x + intersectRect.width, newRect.x + newRect.width):
                 tempColumn = np.zeros(0, dtype=np.uint8)
@@ -403,11 +394,11 @@ class ImageView(object):
                     if tempColumn.size == 0:
                         tempColumn = img
                     else:
-                        tempColumn = np.concatenate((tempColumn, img), axis=0)    
+                        tempColumn = np.concatenate((tempColumn, img), axis=0)
                 if fullRow.size == 0:
                     fullRow = tempColumn
                 else:
-                    fullRow = np.concatenate((fullRow, tempColumn), axis=1)    
+                    fullRow = np.concatenate((fullRow, tempColumn), axis=1)
 
             # 3. Объединяем части сверху, пришиваем наш fullRow, потом части ниже
             # 3.1 Сверху
@@ -422,16 +413,16 @@ class ImageView(object):
                     if tempRow.size == 0:
                         tempRow = img
                     else:
-                        tempRow = np.concatenate((tempRow, img), axis=1)    
+                        tempRow = np.concatenate((tempRow, img), axis=1)
                 if self.sumImg.size == 0:
                     self.sumImg = tempRow
                 else:
-                    self.sumImg = np.concatenate((self.sumImg, tempRow), axis=0)   
+                    self.sumImg = np.concatenate((self.sumImg, tempRow), axis=0)
             # 3.2 Середину по вертикали
             if self.sumImg.size == 0:
                 self.sumImg = fullRow
             else:
-                self.sumImg = np.concatenate((self.sumImg, fullRow), axis=0)  
+                self.sumImg = np.concatenate((self.sumImg, fullRow), axis=0)
             # 3.3 Снизу
             for i in range(intersectRect.y + intersectRect.height, newRect.y + newRect.height):
                 tempRow = np.zeros(0, dtype=np.uint8)
@@ -443,13 +434,13 @@ class ImageView(object):
                     if tempRow.size == 0:
                         tempRow = img
                     else:
-                        tempRow = np.concatenate((tempRow, img), axis=1)    
+                        tempRow = np.concatenate((tempRow, img), axis=1)
                 if self.sumImg.size == 0:
                     self.sumImg = tempRow
                 else:
-                    self.sumImg = np.concatenate((self.sumImg, tempRow), axis=0) 
+                    self.sumImg = np.concatenate((self.sumImg, tempRow), axis=0)
 
-        self.curRect = newRect    
+        self.curRect = newRect
 
     def getView(self, newScale=1.0, newVisibleSize = QSize()):
         if self.savedData.rowCount == 0:
@@ -458,26 +449,26 @@ class ImageView(object):
             newScale = 0.001
         if newScale > 20.0:
             newScale = 20.0
-        
+
         if self.offset.y + newVisibleSize.height() / newScale > self.savedData.arrayImagesSize[0][-1][0].y:
             self.offset.y = self.savedData.arrayImagesSize[0][-1][0].y - newVisibleSize.height() / newScale
-        if self.offset.y < 0:    
-            self.offset.y = 0    
+        if self.offset.y < 0:
+            self.offset.y = 0
         if self.offset.x + newVisibleSize.width() / newScale > self.savedData.arrayImagesSize[0][0][-1].x:
             self.offset.x = self.savedData.arrayImagesSize[0][0][-1].x - newVisibleSize.width() / newScale
-        if self.offset.x < 0:    
-            self.offset.x = 0    
+        if self.offset.x < 0:
+            self.offset.x = 0
         #Проверим сначала, как зименился масштаб, не надо ли загрузить изображения другого качества
         newScaleIndex = 0
         if newScale <= 0.125:
             newScaleIndex = 2
-        elif newScale <= 0.25:    
+        elif newScale <= 0.25:
             newScaleIndex = 1
         self.scale = newScale
         y1Ind = 0
         x1Ind = 0
         y2Ind = 0
-        x2Ind = 0  
+        x2Ind = 0
         y2Offset = self.offset.y + newVisibleSize.height() / newScale
         x2Offset = self.offset.x + newVisibleSize.width() / newScale
         for i in range(self.savedData.rowCount - 1, -1, -1):
@@ -487,12 +478,12 @@ class ImageView(object):
         for j in range(self.savedData.colCount - 1, -1, -1):
             if x2Offset >= self.savedData.arrayImagesSize[0][0][j].x:
                 x2Ind = j
-                break   
-        
+                break
+
         for i in range(y2Ind, -1, -1):
             if self.offset.y >= self.savedData.arrayImagesSize[0][i][0].y:
                 y1Ind = i
-                break 
+                break
         for j in range(x2Ind, -1, -1):
             if self.offset.x >= self.savedData.arrayImagesSize[0][0][j].x:
                 x1Ind = j
@@ -503,9 +494,9 @@ class ImageView(object):
         x1 = (int(self.offset.x) >> self.scaleIndex) - self.savedData.arrayImagesSize[self.scaleIndex][y1Ind][x1Ind].x
         y2 = (int(y2Offset) >> self.scaleIndex) - self.savedData.arrayImagesSize[self.scaleIndex][y1Ind][x1Ind].y
         x2 = (int(x2Offset) >> self.scaleIndex) - self.savedData.arrayImagesSize[self.scaleIndex][y1Ind][x1Ind].x
-            
+
         view = np.copy(self.sumImg[y1:y2, x1:x2, :])
-        
+
         miniKoef = 200 / self.savedData.arrayImagesSize[0][-1][0].y
         minimap = np.copy(self.minimapBase)
         cv2.rectangle(minimap, (int(miniKoef * self.offset.x), int(miniKoef * self.offset.y)), (int(miniKoef * x2Offset), int(miniKoef * y2Offset)), (255, 0, 0), 2)
@@ -513,9 +504,9 @@ class ImageView(object):
         if self.scale != 1:
             return cv2.resize(view, (newVisibleSize.width(), newVisibleSize.height()), cv2.INTER_AREA), minimap
 
-        
+
         return view, minimap
-   
+
 
 def numpyQImage(image):
     qImg = QImage()
@@ -560,8 +551,6 @@ def numpyQImage(image):
         self.resized.emit()"""
 
 
-
-
 #Окно нового сканирования
 class ScanWindow(QMainWindow):
     def __init__(self):
@@ -571,10 +560,12 @@ class ScanWindow(QMainWindow):
     def openFile(self):
         return
 
+
 class ImageStatus(Enum):
     Idle = 0
     Move = 1
     MinimapMove = 2
+
 
 #Главное окно
 class MainWindow(QMainWindow):
@@ -592,7 +583,7 @@ class MainWindow(QMainWindow):
                 settFile = os.path.join(self.EXTRACT_TEMP_FOLDER, folder, "settings.xml")
                 if os.path.exists(settFile):
                     createDT = datetime.datetime.fromtimestamp(os.path.getctime(settFile))
-                    if (datetime.datetime.now() - createDT).total_seconds() > 3000.0:
+                    if (datetime.datetime.now() - createDT).total_seconds() > 120.0:
                         shutil.rmtree(os.path.join(self.EXTRACT_TEMP_FOLDER, folder))
         self.startMousePos = Point()
         self.status = ImageStatus.Idle
@@ -601,11 +592,11 @@ class MainWindow(QMainWindow):
         self.minScale = 0.001
         self.maxScale = 10.0
         self.programSettings = ProgramSettings()
-        
+
         self.configFilePath = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "Config.xml")
         self.loadConfig()
-        
-    
+
+
     def saveConfig(self):
         root = xml.Element("Root")
         apptRC = xml.Element("FullLoadImageMemoryLimit")
@@ -614,7 +605,7 @@ class MainWindow(QMainWindow):
         tree = xml.ElementTree(root)
         with open(self.configFilePath, "w") as fobj:
             tree.write(self.configFilePath)
-        
+
 
     def loadConfig(self):
         if os.path.exists(self.configFilePath):
@@ -628,9 +619,9 @@ class MainWindow(QMainWindow):
                             memLimitText = memLimitText.replace(ch, "*")
                         self.programSettings.fullLoadImageMemoryLimit = eval(memLimitText)
         else:
-            self.saveConfig()                
-        return            
-    
+            self.saveConfig()
+        return
+
     def imageMove(self, pos = QPoint()):
         if self.status == ImageStatus.Move:
             self.imageView.offset.x = self.startMousePos.x - pos.x() / self.imageView.scale
@@ -662,15 +653,15 @@ class MainWindow(QMainWindow):
                     newScale = self.scaleEdit.value() * (1000 + event.angleDelta().y()) / 1000
                 elif event.modifiers() & Qt.ShiftModifier:
                     newScale = self.scaleEdit.value() * (6000 + event.angleDelta().y()) / 6000
-                else:    
+                else:
                     newScale = self.scaleEdit.value() * (2500 + event.angleDelta().y()) / 2500
-                if newScale > self.maxScale: 
+                if newScale > self.maxScale:
                     newScale = self.maxScale
                     self.imageView.scale = newScale
-                if newScale < self.minScale: 
-                    newScale = self.minScale  
-                    self.imageView.scale = newScale  
-  
+                if newScale < self.minScale:
+                    newScale = self.minScale
+                    self.imageView.scale = newScale
+
                 self.imageView.offset.x += event.pos().x() * (newScale - self.imageView.scale) / (newScale * self.imageView.scale)
                 self.imageView.offset.y += event.pos().y() * (newScale - self.imageView.scale) / (newScale * self.imageView.scale)
                 self.scaleEdit.setValue(newScale)
@@ -738,7 +729,7 @@ class MainWindow(QMainWindow):
                     dlgResult = QMessageBox.question(self, "Confirm Dialog", "Файл уже существует. Хотите его перезаписать? Это удалит данные в нем", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if dlgResult == QMessageBox.No:
                         return
-                
+
             else:
                 return
 
@@ -752,23 +743,31 @@ class MainWindow(QMainWindow):
 
         z = zipfile.ZipFile(self.fileName, 'w')
         for root, dirs, files in os.walk(self.EXTRACT_TEMP_SUBFOLDER):
-            for file in files:    
+            for file in files:
                 if file:
                     z.write(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, file), file, compress_type = zipfile.ZIP_DEFLATED)
         self.modiefed = False
         self.setWindowTitle("Micros - " + self.fileName)
         dlgResult = QMessageBox.question(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
-            
+
     def openFile(self):
         selfilter = "Microscope scans (*.misc)"
         if self.fileName and self.modiefed:
-            dlgResult = QMessageBox.question(self, "Confirm Dialog", "Есть несохраненные изменения в текущем файле. Хотите сперва их сохранить?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
+            dlgResult = QMessageBox.question(self,
+                                             "Confirm Dialog",
+                                             "Есть несохраненные изменения в текущем файле. Хотите сперва их сохранить?",
+                                             QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                                             QMessageBox.Yes)
             if dlgResult == QMessageBox.Yes:
                 self.saveFile()
             elif dlgResult == QMessageBox.Cancel:
                 return
-                
-        a = QFileDialog.getOpenFileName(self, "Выберите файл изображения", "/", "All files (*.*);;Microscope scans (*.misc)", selfilter)
+
+        a = QFileDialog.getOpenFileName(self,
+                                        "Выберите файл изображения",
+                                        "/",
+                                        "All files (*.*);;Microscope scans (*.misc)",
+                                        selfilter)
         if len(a[0]) > 0:
             self.EXTRACT_TEMP_SUBFOLDER = os.path.join(self.EXTRACT_TEMP_FOLDER, str(uuid.uuid4()))
             os.mkdir(self.EXTRACT_TEMP_SUBFOLDER)
@@ -777,11 +776,14 @@ class MainWindow(QMainWindow):
             sumSize = 0
             for f in os.listdir(self.EXTRACT_TEMP_SUBFOLDER):
                 if os.path.isfile(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, f)):
-                    sumSize += os.path.getsize(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, f)) 
-            
+                    sumSize += os.path.getsize(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, f))
+
             if self.savedData.loadFromFileXML(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, "settings.xml")):
-                self.savedData.folder = self.EXTRACT_TEMP_SUBFOLDER 
-                self.imageView.minimapBase = cv2.imread(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, "mini.jpg"), cv2.IMREAD_COLOR)[:, :, ::-1]
+                self.savedData.folder = self.EXTRACT_TEMP_SUBFOLDER
+                self.savedData.prepareScans()
+                path_to_minimap = os.path.join(self.EXTRACT_TEMP_SUBFOLDER, "mini.jpg")
+                if os.path.exists(path_to_minimap):
+                    self.imageView.minimapBase = cv2.imread(path_to_minimap, cv2.IMREAD_COLOR)[:, :, ::-1]
                 self.fileName = a[0]
                 self.modiefed = False
                 self.savedData.setAllImageInMemory(sumSize <= self.programSettings.fullLoadImageMemoryLimit)
@@ -801,7 +803,7 @@ class MainWindow(QMainWindow):
 
     def prepareScans(self):
         self.modiefed = self.savedData.prepareScans(True)
-    
+
     def btn31_Click(self):
         koefSize = 0.30
         imgSize = Size()
@@ -812,13 +814,13 @@ class MainWindow(QMainWindow):
         conArea.y = 1400
         conArea.width = 900
         conArea.height = 1200
-        
+
         sumImg = np.arange(0)
         for i in range (5):
             y1 = conArea.y
             if i == 0:
                 y1 = 0
-            y2 = conArea.y + conArea.height  
+            y2 = conArea.y + conArea.height
             if i == 4:
                 y2 = imgSize.height
             rowImg = np.arange(0)
@@ -826,7 +828,7 @@ class MainWindow(QMainWindow):
                 x1 = conArea.x
                 if j == 0:
                     x1 = 0
-                x2 = conArea.x + conArea.width  
+                x2 = conArea.x + conArea.width
                 if j == 10:
                     x2 = imgSize.width
                 fileName = "/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_" + str(i+1) + "_" + str(j+1) + ".jpg";
@@ -836,12 +838,12 @@ class MainWindow(QMainWindow):
                     rowImg = np.copy(img2)
                 else:
                     rowImg = np.concatenate((rowImg, img2), axis=1)
-               
+
             if sumImg.size == 0:
                 sumImg = np.copy(rowImg)
             else:
-                sumImg = np.concatenate((sumImg, rowImg), axis=0)    
-                
+                sumImg = np.concatenate((sumImg, rowImg), axis=0)
+
         cv2.imwrite("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/sumImg.jpg", sumImg)
 
     def setNewView(self):
@@ -861,7 +863,7 @@ class MainWindow(QMainWindow):
     def viewMenuMainPanel_Click(self):
         if self.viewMenuMainPanel.isChecked():
             self.rightDocWidget.show()
-        else: 
+        else:
             self.rightDocWidget.hide()
 
     def servicesMenuSettings_Click(self):
@@ -939,11 +941,11 @@ class MainWindow(QMainWindow):
         #self.viewMenuMainPanel.setCheckable(True)
         #self.viewMenuMainPanel.setChecked(True)
         #viewMenu.addAction(self.viewMenuMainPanel)
-        
+
 
 
         # Элементы формы
-        
+
         # Левые элементы
         """leftLayout = QVBoxLayout()
         btn1 = QPushButton("Load")
@@ -960,7 +962,7 @@ class MainWindow(QMainWindow):
         mainWidget.setLayout(centralLayout)
         #self.imLabel = ClickedLabel()
         self.imLabel = QLabel()
-        
+
         #img2 = cv2.imread("/home/krasnov/Pictures/схема_Уберподробно/beforeRotate/2_7.jpg", cv2.IMREAD_COLOR)[:, :, ::-1]
         #height, width = img.shape[:2]
         #start_row, strt_col = int(height * 0.00), int(width * 0.00)
@@ -975,8 +977,8 @@ class MainWindow(QMainWindow):
         #imQ = QImage(img.data,img.cols,img.cols,QImage.Format_Grayscale16)
         #pixmap = QPixmap("/home/krasnov/Pictures/P_20191028_093917.jpg")
         #pixmap = QPixmap.fromImage(imQ)
-        
-        
+
+
         #self.imLabel.setMaximumSize(1200, 800)
         #self.imLabel.setFixedSize(1200, 800)
         #self.imLabel.setAlignment(Qt.AlignCenter)
@@ -988,19 +990,19 @@ class MainWindow(QMainWindow):
 
         #self.setWindowTitle(str(self.imLabel.size().width()) + "x" + str(self.imLabel.size().height()))
         #self.setWindowTitle(str(random.randint(1,44)))
-        
+
         centralLayout.addWidget(self.imLabel)
 
         minimapLayout = QGridLayout()
         self.imLabel.setLayout(minimapLayout)
-        
+
         self.minimapLabel = QLabel()
         #imgMini = cv2.imread("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/mini.jpg", cv2.IMREAD_COLOR)[:, :, ::-1]
         #cropedMini = imgMini.copy()
         #qImgMini = numpyQImage(cropedMini)
         #pixmapMini = QtGui.QPixmap.fromImage(qImgMini)
         #pixmapMini = pixmapMini.scaled(self.minimapLabel.size(), Qt.KeepAspectRatio)
-        
+
         #self.minimapLabel.setPixmap(pixmapMini)
         #self.minimapLabel.setFixedSize(pixmapMini.size())
         self.minimapLabel.installEventFilter(self)
@@ -1008,10 +1010,10 @@ class MainWindow(QMainWindow):
         minimapLayout.setRowStretch(0,1)
         minimapLayout.setColumnStretch(0,1)
         minimapLayout.addWidget(self.minimapLabel, 1, 1)
-        
+
         messageEdit = QTextEdit(self)
         messageEdit.setEnabled(False)
-        
+
         messageEdit.setText("Hello, world!")
 
         messageEdit.setFixedHeight(100)
@@ -1022,7 +1024,7 @@ class MainWindow(QMainWindow):
         self.rightDocWidget = QDockWidget("Dock Widget", self)
         self.rightDocWidget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         rightLayout = QVBoxLayout(self)
-        
+
         btn31 = QPushButton("MegaImg", self)
         btn31.clicked.connect(self.btn31_Click)
         btn32 = QPushButton("Prepare", self)
@@ -1038,7 +1040,7 @@ class MainWindow(QMainWindow):
         rightLayout.addWidget(minimapCheckBox)
 
         rightLayout.addSpacing(50)
-        
+
         labScale = QLabel("Увеличение")
         self.scaleEdit = QDoubleSpinBox()
         self.scaleEdit.setMinimum(0.001)
@@ -1057,9 +1059,9 @@ class MainWindow(QMainWindow):
         #self.rightDocWidget.setLayout(rightLayout)
         self.rightDocWidget.setWidget(rightDockWidgetContents)
         self.rightDocWidget.installEventFilter(self)
-        
+
         #mainLayout.addLayout(rightLayout)
-        
+
 
         self.setCentralWidget(mainWidget)
         self.addDockWidget(Qt.RightDockWidgetArea, self.rightDocWidget)
@@ -1069,65 +1071,11 @@ class MainWindow(QMainWindow):
         self.resize(1280, 720)
         self.move(300, 300)
         self.setMinimumSize(800, 600)
-        
+
         self.show()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = MainWindow()
     sys.exit(app.exec_())
-    """print( cv2.__version__ )
-    app = QApplication(sys.argv)
-
-    mainWindow = QMainWindow()
-    mainWindow.resize(250, 150)
-    mainWindow.move(300, 300)
-    mainWindow.setWindowTitle('Simple')
-    mainWindow.show()
-
-    menuBar = QMenuBar(mainWindow)
-    fileMenu = QMenu("&File")
-    menuBar.addMenu(fileMenu)
-    fileMenuANew = fileMenu.addAction("&New")
-    fileMenu.addSeparator()
-    fileMenuAOpen = fileMenu.addAction("&Open")
-    fileMenu.addSeparator()
-    fileMenuASave = fileMenu.addAction("&Save")
-    fileMenuASaveAss = fileMenu.addAction("Save As...")
-    fileMenu.addSeparator()
-    fileMenuAExit = QAction("&Exit", mainWindow)
-    fileMenuAExit.trigger.connect(app.quit)
-    fileMenu.addAction(fileMenuAExit)
-        
-    
-
-    btn1 = QPushButton(mainWindow)
-    
-    
-    mainWindow.setMenuBar(menuBar)
-    
-    mainWindow.setWindowTitle("MicroFoto")
-
-    mainLayout = QHBoxLayout()
-    mainWindow.setLayout(mainLayout)
-    """
-    #fileTreeView = QTreeView()
-    #model = QFileSystemModel()
-    #model.setNameFilters(["*.bmp", "*"])
-    #fileTreeView.setModel(model)
-    #mainLayout.addWidget (QTreeView())
-    
-    """openFileDlg = QFileDialog(mainWindow)
-    selfilter = "JPEG (*.jpg *.jpeg)";
-    a = QFileDialog.getOpenFileName(mainWindow, "Выберите файл изображения", "/", "All files (*.*);;JPEG (*.jpg *.jpeg);;TIFF (*.tif)", selfilter)
-    image = cv2.imread(a[0])
-    cv2.imshow("Image", image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()"""
-    #print(str(a))
-    #print(str(a))
-    
-
-    sys.exit(app.exec_())
-    
-    
