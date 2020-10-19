@@ -159,6 +159,10 @@ class SavedData(object):
                     minimap = np.concatenate((minimap, minimapRow), axis=0)
 
         if minimapNeedCreate:
+            max_size = max(minimap.shape[0], minimap.shape[1])
+            if max_size > 200:
+                dim = (int(minimap.shape[1] * 200 / max_size), int(minimap.shape[0] * 200 / max_size))
+                minimap = cv2.resize(minimap, dim, interpolation=cv2.INTER_AREA)
             cv2.imwrite(os.path.join(self.folder, "mini.jpg"), minimap)
 
         return modiefed
@@ -497,9 +501,21 @@ class ImageView(object):
 
         view = np.copy(self.sumImg[y1:y2, x1:x2, :])
 
-        miniKoef = 200 / self.savedData.arrayImagesSize[0][-1][0].y
         minimap = np.copy(self.minimapBase)
-        cv2.rectangle(minimap, (int(miniKoef * self.offset.x), int(miniKoef * self.offset.y)), (int(miniKoef * x2Offset), int(miniKoef * y2Offset)), (255, 0, 0), 2)
+        # if self.savedData.rowCount > 0:
+        #     self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y / self.minimapLabel.size().height() - 0.5 * self.imLabel.size().height() / self.imageView.scale
+        #     self.imageView.offset.x = event.pos().x() * self.savedData.arrayImagesSize[0][0][-1].x / self.minimapLabel.size().width() - 0.5 * self.imLabel.size().width() / self.imageView.scale
+        # event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y / self.minimapLabel.size().height() = self.imageView.offset.y + 0.5 * self.imLabel.size().height() / self.imageView.scale
+        # event.pos().y() = self.minimapLabel.size().height() * (self.imageView.offset.y + 0.5 * self.imLabel.size().height() / self.imageView.scale) / self.savedData.arrayImagesSize[0][-1][0].y
+
+        miniKoef = min(minimap.shape[0] / self.savedData.arrayImagesSize[0][-1][0].y,
+                       minimap.shape[1] / self.savedData.arrayImagesSize[0][0][-1].x)
+        cv2.rectangle(minimap,
+                      (int(miniKoef * self.offset.x), int(miniKoef * self.offset.y)),
+                      (int(miniKoef * x2Offset),
+                       int(miniKoef * y2Offset)),
+                      (255, 0, 0),
+                      2)
 
         if self.scale != 1:
             return cv2.resize(view, (newVisibleSize.width(), newVisibleSize.height()), cv2.INTER_AREA), minimap
