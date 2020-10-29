@@ -604,14 +604,13 @@ class MainWindow(QMainWindow):
         self.startMousePos = Point()
         self.status = ImageStatus.Idle
         self.fileName = ""
-        self.modiefed = False
+        self.modified = False
         self.minScale = 0.001
         self.maxScale = 10.0
         self.programSettings = ProgramSettings()
 
         self.configFilePath = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "Config.xml")
         self.loadConfig()
-
 
     def saveConfig(self):
         root = xml.Element("Root")
@@ -621,7 +620,6 @@ class MainWindow(QMainWindow):
         tree = xml.ElementTree(root)
         with open(self.configFilePath, "w") as fobj:
             tree.write(self.configFilePath)
-
 
     def loadConfig(self):
         if os.path.exists(self.configFilePath):
@@ -714,7 +712,7 @@ class MainWindow(QMainWindow):
         self.setNewView()
 
     def closeEvent(self, event):
-        if self.fileName and self.modiefed:
+        if self.fileName and self.modified:
             dlgResult = QMessageBox.question(self, "Confirm Dialog", "Есть несохраненные изменения. Хотите их сохранить перед закрытием?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
             if dlgResult == QMessageBox.Yes:
                 self.saveFile()
@@ -762,13 +760,13 @@ class MainWindow(QMainWindow):
             for file in files:
                 if file:
                     z.write(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, file), file, compress_type = zipfile.ZIP_DEFLATED)
-        self.modiefed = False
+        self.modified = False
         self.setWindowTitle("Micros - " + self.fileName)
         dlgResult = QMessageBox.question(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
 
     def openFile(self):
         selfilter = "Microscope scans (*.misc)"
-        if self.fileName and self.modiefed:
+        if self.fileName and self.modified:
             dlgResult = QMessageBox.question(self,
                                              "Confirm Dialog",
                                              "Есть несохраненные изменения в текущем файле. Хотите сперва их сохранить?",
@@ -801,7 +799,7 @@ class MainWindow(QMainWindow):
                 if os.path.exists(path_to_minimap):
                     self.imageView.minimapBase = cv2.imread(path_to_minimap, cv2.IMREAD_COLOR)[:, :, ::-1]
                 self.fileName = a[0]
-                self.modiefed = False
+                self.modified = False
                 self.savedData.setAllImageInMemory(sumSize <= self.programSettings.fullLoadImageMemoryLimit)
                 self.servicesMenuAllInMemory.setChecked(sumSize <= self.programSettings.fullLoadImageMemoryLimit)
                 self.resized()
@@ -818,7 +816,7 @@ class MainWindow(QMainWindow):
             self.minimapLabel.hide()
 
     def prepareScans(self):
-        self.modiefed = self.savedData.prepareScans(True)
+        self.modified = self.savedData.prepareScans(True)
 
     def btn31_Click(self):
         koefSize = 0.30
