@@ -1,7 +1,6 @@
 import cv2
 import sys
 import datetime
-import random
 import uuid
 import shutil
 from enum import Enum
@@ -9,13 +8,13 @@ import numpy as np
 import os.path
 import tempfile
 import zipfile
-from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QTreeView, QHBoxLayout, QVBoxLayout, QLabel
-from PyQt5.QtWidgets import QFileSystemModel, QMenuBar, QMenu, QMainWindow, QPushButton, QAction, qApp
-from PyQt5.QtWidgets import QTextEdit, QSizePolicy, QGridLayout, QStyle, QFrame, QErrorMessage, QCheckBox
-from PyQt5.QtWidgets import QLineEdit, QSpinBox, QDoubleSpinBox, QMessageBox, QDockWidget
-from PyQt5.QtGui import QIcon, QPixmap, QImage
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QHBoxLayout, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QMainWindow, QPushButton, QAction
+from PyQt5.QtWidgets import QTextEdit, QSizePolicy, QGridLayout, QErrorMessage, QCheckBox
+from PyQt5.QtWidgets import QDoubleSpinBox, QMessageBox, QDockWidget
+from PyQt5.QtGui import QImage
 import PyQt5.QtGui as QtGui
-from PyQt5.QtCore import Qt, QSize, QEvent, QPoint, QPointF
+from PyQt5.QtCore import Qt, QSize, QEvent, QPoint
 from lxml import etree
 
 from SettingsDialog import SettingsDialog, ProgramSettings
@@ -171,37 +170,30 @@ class SavedData(object):
             cv2.imwrite(os.path.join(self.folder, "mini.jpg"), minimap)
 
         return modified
-        """
-        if not replace and (not os.path.exists(self.Folder + "P_" + str(i+1) + "_" + str(j+1) + ".jpg") or not os.path.exists(self.Folder + "P1_" + str(i+1) + "_" + str(j+1) + ".jpg") or not os.path.exists(self.Folder + "P2_" + str(i+1) + "_" + str(j+1) + ".jpg")):
-            img_s = cv2.imread(self.Folder + "S_" + str(i+1) + "_" + str(j+1) + ".jpg")
-            img_p = np.copy(img[y1:y2, x1:x2, :])
-            if not os.path.exists(self.Folder + "P_" + str(i+1) + "_" + str(j+1) + ".jpg"):
-                cv2.imwrite(self.Folder + "P_" + str(i+1) + "_" + str(j+1) + ".jpg", img_p)
-            
-        """
 
     # сохранение данных в XML
-    def save_to_file_xml(self, xmlFile):
+    def save_to_file_xml(self, xml_file):
+        # noinspection PyBroadException
         try:
             root = Xml.Element("Root")
-            appt_rc = Xml.Element("RowCount")
-            appt_rc.text = str(self.rowCount)
-            root.append(appt_rc)
-            appt_cc = Xml.Element("ColCount")
-            appt_cc.text = str(self.colCount)
-            root.append(appt_cc)
-            appt_i = Xml.Element("Image")
-            root.append(appt_i)
-            formatt = Xml.SubElement(appt_i, "Format")
-            formatt.text = self.format
-            # isAllImageInMemory = xml.SubElement(appt_i, "AllImageInMemory")
+            app_rc = Xml.Element("RowCount")
+            app_rc.text = str(self.rowCount)
+            root.append(app_rc)
+            app_cc = Xml.Element("ColCount")
+            app_cc.text = str(self.colCount)
+            root.append(app_cc)
+            app_i = Xml.Element("Image")
+            root.append(app_i)
+            form = Xml.SubElement(app_i, "Format")
+            form.text = self.format
+            # isAllImageInMemory = xml.SubElement(app_i, "AllImageInMemory")
             # isAllImageInMemory.text = str(self.allImageInMemory)
-            img_size = Xml.SubElement(appt_i, "ImgSize")
+            img_size = Xml.SubElement(app_i, "ImgSize")
             is_width = Xml.SubElement(img_size, "Width")
             is_width.text = str(self.imgSize.width)
             is_height = Xml.SubElement(img_size, "Height")
             is_height.text = str(self.imgSize.height)
-            con_area = Xml.SubElement(appt_i, "ConnectionArea")
+            con_area = Xml.SubElement(app_i, "ConnectionArea")
             ca_x = Xml.SubElement(con_area, "X")
             ca_x.text = str(self.connectionArea.x)
             ca_y = Xml.SubElement(con_area, "Y")
@@ -210,10 +202,9 @@ class SavedData(object):
             ca_width.text = str(self.connectionArea.width)
             ca_height = Xml.SubElement(con_area, "Height")
             ca_height.text = str(self.connectionArea.height)
-
             tree = Xml.ElementTree(root)
-            with open(xmlFile, "w") as fobj:
-                tree.write(xmlFile)
+            with open(xml_file, "w") as f_obj:
+                tree.write(xml_file)
             return True
         except Exception:
             return False
@@ -224,17 +215,17 @@ class SavedData(object):
             with open(xml_file) as fobj:
                 xml = fobj.read()
             root = etree.fromstring(xml)
-            for appt in root.getchildren():
-                if appt.tag == "RowCount":
-                    self.rowCount = int(appt.text)
-                elif appt.tag == "ColCount":
-                    self.colCount = int(appt.text)
-                elif appt.tag == "Image":
-                    for elem in appt.getchildren():
+            for app in root.getchildren():
+                if app.tag == "RowCount":
+                    self.rowCount = int(app.text)
+                elif app.tag == "ColCount":
+                    self.colCount = int(app.text)
+                elif app.tag == "Image":
+                    for elem in app.getchildren():
                         if elem.tag == "Format":
-                            self.format = appt.text
+                            self.format = app.text
                         # elif elem.tag == "AllImageInMemory":
-                        #    self.allImageInMemory = bool(appt.text)
+                        #    self.allImageInMemory = bool(app.text)
                         elif elem.tag == "ImgSize":
                             for sub_elem in elem.getchildren():
                                 if sub_elem.tag == "Width":
@@ -253,7 +244,6 @@ class SavedData(object):
                                     self.connectionArea.y = int(sub_elem.text)
             self.filePath = xml_file
             self.arrayImagesSize = []
-            koef = 1
             for k in range(3):
                 array_area = []
                 y = 0
@@ -308,7 +298,7 @@ class ImageView(object):
         self.saved_data_clear()
 
     def saved_data_clear(self):
-        # self.imgData = np.zerosro((self.savedData.rowCount, self.savedData.colCount))
+        # self.imgData = np.zero((self.savedData.rowCount, self.savedData.colCount))
         self.sumImg = np.empty(0)
         self.curRect = Rect(-1, -1, 0, 0)
 
@@ -363,8 +353,7 @@ class ImageView(object):
         elif new_rect.width > 0 and new_rect.height > 0:
             # 1. Вырезаем видимую часть старого изображения
             first_area_of_intersect_rect = self.saved_data.arrayImagesSize[new_scale_index][intersect_rect.y][intersect_rect.x]
-            last_area_of_intersect_rect = self.saved_data.arrayImagesSize[new_scale_index]
-            [intersect_rect.y + intersect_rect.height - 1][intersect_rect.x + intersect_rect.width - 1]
+            last_area_of_intersect_rect = self.saved_data.arrayImagesSize[new_scale_index][intersect_rect.y + intersect_rect.height - 1][intersect_rect.x + intersect_rect.width - 1]
             first_area_of_current_rect = self.saved_data.arrayImagesSize[new_scale_index][self.curRect.y][self.curRect.x]
             y1_inter_in_current = first_area_of_intersect_rect.y - first_area_of_current_rect.y
             x1_inter_in_current = first_area_of_intersect_rect.x - first_area_of_current_rect.x
@@ -529,12 +518,12 @@ class ImageView(object):
         # event.pos().y() = self.minimapLabel.size().height() * (self.imageView.offset.y + 0.5
         # * self.imLabel.size().height() / self.imageView.scale) / self.savedData.arrayImagesSize[0][-1][0].y
 
-        mini_koef = min(minimap.shape[0] / self.saved_data.arrayImagesSize[0][-1][0].y,
-                       minimap.shape[1] / self.saved_data.arrayImagesSize[0][0][-1].x)
+        mini_rate = min(minimap.shape[0] / self.saved_data.arrayImagesSize[0][-1][0].y,
+                        minimap.shape[1] / self.saved_data.arrayImagesSize[0][0][-1].x)
         cv2.rectangle(minimap,
-                      (int(mini_koef * self.offset.x), int(mini_koef * self.offset.y)),
-                      (int(mini_koef * x2_offset),
-                       int(mini_koef * y2_offset)),
+                      (int(mini_rate * self.offset.x), int(mini_rate * self.offset.y)),
+                      (int(mini_rate * x2_offset),
+                       int(mini_rate * y2_offset)),
                       (255, 0, 0),
                       2)
 
@@ -588,7 +577,7 @@ def numpy_q_image(image):
         self.resized.emit()"""
 
 
-#Окно нового сканирования
+# Окно нового сканирования
 class ScanWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -604,14 +593,17 @@ class ImageStatus(Enum):
     MinimapMove = 2
 
 
-#Главное окно
+# Главное окно
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.savedData = SavedData("")
-        self.initUI()
+        self.view_menu_main_panel = QAction()
+        self.services_menu_all_in_memory = QAction()
+        self.services_menu_settings = QAction()
+        self.init_ui()
         self.EXTRACT_TEMP_FOLDER = os.path.join(tempfile.gettempdir(), "Micros")
-        self.EXTRACT_TEMP_SUBFOLDER = ""
+        self.EXTRACT_TEMP_SUB_FOLDER = ""
         self.imageView = ImageView(self.savedData)
         if not os.path.exists(self.EXTRACT_TEMP_FOLDER):
             os.mkdir(self.EXTRACT_TEMP_FOLDER)
@@ -632,6 +624,211 @@ class MainWindow(QMainWindow):
 
         self.configFilePath = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "Config.xml")
         self.loadConfig()
+
+    def init_ui(self):
+        self.setWindowTitle('Micros')
+        # Основное меню
+        menu_bar = self.menuBar()
+        # Меню "Файл"
+        file_menu = menu_bar.addMenu("&Файл")
+        file_menu_a_new = QAction("&Новый", self)
+        file_menu_a_new.setShortcut("Ctrl+N")
+        file_menu_a_new.setStatusTip("Новое сканирование")
+        # file_menu_a_new.triggered.connect(self.close)
+        file_menu.addAction(file_menu_a_new)
+        file_menu.addSeparator()
+        file_menu_a_open = QAction("&Открыть", self)
+        file_menu_a_open.setShortcut("Ctrl+O")
+        file_menu_a_open.setStatusTip("Открыть существующее изображение")
+        file_menu_a_open.triggered.connect(self.openFile)
+        file_menu.addAction(file_menu_a_open)
+        file_menu.addSeparator()
+        file_menu_a_save = file_menu.addAction("&Сохранить")
+        file_menu_a_save.setShortcut("Ctrl+S")
+        file_menu_a_save.setStatusTip("Сохранить изменения")
+        file_menu_a_save.triggered.connect(self.save_file)
+        file_menu_a_save_ass = file_menu.addAction("Сохранить как...")
+        file_menu_a_save_ass.setShortcut("Ctrl+Shift+S")
+        file_menu_a_save_ass.setStatusTip("Сохранить текущее изображение в другом файле...")
+        file_menu_a_save_ass.triggered.connect(self.saveFileAss)
+        file_menu.addSeparator()
+        file_menu_a_exit = QAction("&Выйти", self)
+        file_menu_a_exit.setShortcut("Ctrl+Q")
+        file_menu_a_exit.setStatusTip("Закрыть приложение")
+        file_menu_a_exit.triggered.connect(self.close)
+        file_menu.addAction(file_menu_a_exit)
+        menu_bar.addMenu(file_menu)
+        # Меню "Вид"
+        view_menu = menu_bar.addMenu("&Вид")
+
+        self.view_menu_main_panel.setText("Основная &панель")
+        self.view_menu_main_panel.setShortcut("Ctrl+T")
+        self.view_menu_main_panel.setStatusTip("Отображать основную панель")
+        self.view_menu_main_panel.triggered.connect(self.view_menu_main_panel_click)
+        self.view_menu_main_panel.setCheckable(True)
+        self.view_menu_main_panel.setChecked(True)
+        view_menu.addAction(self.view_menu_main_panel)
+        menu_bar.addMenu(view_menu)
+        # Меню "Настройки"
+        services_menu = menu_bar.addMenu("&Сервис")
+        self.services_menu_all_in_memory.setText("&Буферизировать изображение")
+        self.services_menu_all_in_memory.setShortcut("Ctrl+M")
+        self.services_menu_all_in_memory.setStatusTip("Разместить все части изображения в" +
+                                                      " памяти для увеличения скорость навигации по нему")
+        self.services_menu_all_in_memory.triggered.connect(self.services_menu_all_in_memory_click)
+        self.services_menu_all_in_memory.setCheckable(True)
+        self.services_menu_all_in_memory.setChecked(False)
+        services_menu.addAction(self.services_menu_all_in_memory)
+        services_menu.addSeparator()
+
+        self.services_menu_settings.setText("Настройки")
+        self.services_menu_settings.setStatusTip("Изменить основные настройки программы")
+        self.services_menu_settings.triggered.connect(self.services_menu_settings_click)
+        services_menu.addAction(self.services_menu_settings)
+        menu_bar.addMenu(services_menu)
+        # self.viewMenuMainPanel = QAction("Основная &панель", self)
+        # self.viewMenuMainPanel.setShortcut("Ctrl+T")
+        # self.viewMenuMainPanel.setStatusTip("Отображать основную панель")
+        # self.viewMenuMainPanel.triggered.connect(self.viewMenuMainPanel_Click)
+        # self.viewMenuMainPanel.setCheckable(True)
+        # self.viewMenuMainPanel.setChecked(True)
+        # view_menu.addAction(self.viewMenuMainPanel)
+        # Элементы формы
+        # Левые элементы
+        """leftLayout = QVBoxLayout()
+        btn1 = QPushButton("Load")
+        btn1.setMaximumWidth(150)
+        leftLayout.addWidget(btn1)
+        leftLayout.addStretch(0)
+        main_layout.addLayout(leftLayout)"""
+
+        # Центральные элементы, включая изображение
+        main_layout = QHBoxLayout(self)
+        main_widget = QWidget(self)
+        # main_widget.setLayout(main_layout)
+        central_layout = QVBoxLayout()
+        main_widget.setLayout(central_layout)
+        # self.im_label = ClickedLabel()
+        self.im_label = QLabel()
+
+        # img2 = cv2.imread("/home/krasnov/Pictures/схема_Уберподробно/beforeRotate/2_7.jpg",
+        # cv2.IMREAD_COLOR)[:, :, ::-1]
+        # height, width = img.shape[:2]
+        # start_row, strt_col = int(height * 0.00), int(width * 0.00)
+        # end_row, end_col = int(height * 1.00), int(width * 1.00)
+        # croped = img[start_row:end_row, strt_col:end_col].copy()
+        """img = cv2.imread("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_3_7.jpg"
+        , cv2.IMREAD_COLOR)[:, :, ::-1]
+        croped = img.copy()
+        qImg = numpyQImage(croped)
+        pixmap = QtGui.QPixmap.fromImage(qImg)
+        self.imLabel.setPixmap(pixmap)"""
+        # pixmap = pixmap.scaled(self.imLabel.size(), Qt.KeepAspectRatio)
+        # imQ = QImage(img.data,img.cols,img.cols,QImage.Format_Grayscale16)
+        # pixmap = QPixmap("/home/krasnov/Pictures/P_20191028_093917.jpg")
+        # pixmap = QPixmap.fromImage(imQ)
+
+
+        # self.imLabel.setMaximumSize(1200, 800)
+        # self.imLabel.setFixedSize(1200, 800)
+        # self.imLabel.setAlignment(Qt.AlignCenter)
+        self.im_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.im_label.setStyleSheet("border: 1px solid red")
+        # self.imLabel.mouseReleased.connect(self.imLabel_MouseReleased)
+        # self.imLabel.resized.connect(self.imLabel_Resize)
+        self.im_label.installEventFilter(self)
+
+        # self.setWindowTitle(str(self.imLabel.size().width()) + "x" + str(self.imLabel.size().height()))
+        # self.setWindowTitle(str(random.randint(1,44)))
+
+        central_layout.addWidget(self.im_label)
+
+        minimap_layout = QGridLayout()
+        self.im_label.setLayout(minimap_layout)
+
+        self.minimap_label = QLabel()
+        # imgMini = cv2.imread(
+        # "/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/mini.jpg",
+        # cv2.IMREAD_COLOR)[:, :, ::-1]
+        # cropedMini = imgMini.copy()
+        # qImgMini = numpyQImage(cropedMini)
+        # pixmapMini = QtGui.QPixmap.fromImage(qImgMini)
+        # pixmapMini = pixmapMini.scaled(self.minimapLabel.size(), Qt.KeepAspectRatio)
+
+        # self.minimapLabel.setPixmap(pixmapMini)
+        # self.minimapLabel.setFixedSize(pixmapMini.size())
+        self.minimap_label.installEventFilter(self)
+
+        minimap_layout.setRowStretch(0,1)
+        minimap_layout.setColumnStretch(0,1)
+        minimap_layout.addWidget(self.minimap_label, 1, 1)
+
+        message_edit = QTextEdit(self)
+        message_edit.setEnabled(False)
+
+        message_edit.setText("Hello, world!")
+
+        message_edit.setFixedHeight(100)
+        message_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+        central_layout.addWidget(message_edit)
+        # main_layout.addLayout(central_layout)
+        # Правые элементы
+        self.right_doc_widget = QDockWidget("Dock Widget", self)
+        self.right_doc_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        right_layout = QVBoxLayout(self)
+
+        btn31 = QPushButton("MegaImg", self)
+        btn31.clicked.connect(self.btn31_click)
+        btn32 = QPushButton("Prepare", self)
+        btn32.clicked.connect(self.prepareScans)
+        btn33 = QPushButton("View", self)
+        right_layout.addWidget(btn31)
+        right_layout.addWidget(btn32)
+        right_layout.addWidget(btn33)
+
+        minimap_check_box = QCheckBox("Мини-изображение", self)
+        minimap_check_box.stateChanged.connect(self.minimap_check_box_changed)
+        minimap_check_box.setCheckState(Qt.Checked)
+        right_layout.addWidget(minimap_check_box)
+
+        grid_check_box = QCheckBox("Сетка", self)
+        grid_check_box.stateChanged.connect(self.grid_check_box_changed)
+        grid_check_box.setCheckState(Qt.Checked)
+        right_layout.addWidget(grid_check_box)
+
+        right_layout.addSpacing(50)
+
+        lab_scale = QLabel("Увеличение")
+        self.scale_edit = QDoubleSpinBox()
+        self.scale_edit.setMinimum(0.001)
+        self.scale_edit.setMaximum(10.0)
+        self.scale_edit.setValue(1.0)
+        self.scale_edit.setSingleStep(0.01)
+        self.scale_edit.setDecimals(3)
+        self.scale_edit.valueChanged.connect(self.scale_edit_change)
+        right_layout.addWidget(lab_scale)
+        right_layout.addWidget(self.scale_edit)
+
+        right_layout.addStretch(0)
+
+        right_dock_widget_contents = QWidget()
+        right_dock_widget_contents.setLayout(right_layout)
+        # self.rightDocWidget.setLayout(right_layout)
+        self.right_doc_widget.setWidget(right_dock_widget_contents)
+        self.right_doc_widget.installEventFilter(self)
+
+        # main_layout.addLayout(right_layout)
+
+        self.setCentralWidget(main_widget)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.right_doc_widget)
+
+        self.statusBar().setStatusTip("Ready")
+
+        self.resize(1280, 720)
+        self.move(300, 300)
+        self.setMinimumSize(800, 600)
+
+        self.show()
 
     def save_config(self):
         root = Xml.Element("Root")
@@ -661,11 +858,11 @@ class MainWindow(QMainWindow):
         if self.status == ImageStatus.Move:
             self.imageView.offset.x = self.startMousePos.x - pos.x() / self.imageView.scale
             self.imageView.offset.y = self.startMousePos.y - pos.y() / self.imageView.scale
-            self.setNewView()
+            self.set_new_view()
 
     # Обработчики событий формы и ее компонентов
     def eventFilter(self, obj, event):
-        if obj is self.imLabel:
+        if obj is self.im_label:
             if event.type() == QEvent.MouseButtonPress:
                 # print('mouse press event = ', event.pos())
                 if self.status == ImageStatus.Idle:
@@ -684,11 +881,11 @@ class MainWindow(QMainWindow):
             elif event.type() == QEvent.Wheel:
                 # self.setWindowTitle(str(event.angleDelta().y()) + "; pos: " + str(event.pos()))
                 if event.modifiers() & Qt.ControlModifier:
-                    new_scale = self.scaleEdit.value() * (1000 + event.angleDelta().y()) / 1000
+                    new_scale = self.scale_edit.value() * (1000 + event.angleDelta().y()) / 1000
                 elif event.modifiers() & Qt.ShiftModifier:
-                    new_scale = self.scaleEdit.value() * (6000 + event.angleDelta().y()) / 6000
+                    new_scale = self.scale_edit.value() * (6000 + event.angleDelta().y()) / 6000
                 else:
-                    new_scale = self.scaleEdit.value() * (2500 + event.angleDelta().y()) / 2500
+                    new_scale = self.scale_edit.value() * (2500 + event.angleDelta().y()) / 2500
                 if new_scale > self.maxScale:
                     new_scale = self.maxScale
                     self.imageView.scale = new_scale
@@ -698,55 +895,55 @@ class MainWindow(QMainWindow):
 
                 self.imageView.offset.x += event.pos().x() * (new_scale - self.imageView.scale) / (new_scale * self.imageView.scale)
                 self.imageView.offset.y += event.pos().y() * (new_scale - self.imageView.scale) / (new_scale * self.imageView.scale)
-                self.scaleEdit.setValue(new_scale)
-                self.setNewView()
+                self.scale_edit.setValue(new_scale)
+                self.set_new_view()
             elif event.type() == QEvent.Resize:
                 self.resized()
-        elif obj is self.minimapLabel:
+        elif obj is self.minimap_label:
             if event.type() == QEvent.MouseButtonPress:
                 # print('mouse press event = ', event.pos())
                 self.status = ImageStatus.MinimapMove
                 if self.savedData.rowCount > 0:
-                    self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y / self.minimapLabel.size().height() - 0.5 * self.imLabel.size().height() / self.imageView.scale
-                    self.imageView.offset.x = event.pos().x() * self.savedData.arrayImagesSize[0][0][-1].x / self.minimapLabel.size().width() - 0.5 * self.imLabel.size().width() / self.imageView.scale
-                    self.setNewView()
+                    self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y / self.minimap_label.size().height() - 0.5 * self.im_label.size().height() / self.imageView.scale
+                    self.imageView.offset.x = event.pos().x() * self.savedData.arrayImagesSize[0][0][-1].x / self.minimap_label.size().width() - 0.5 * self.im_label.size().width() / self.imageView.scale
+                    self.set_new_view()
             elif event.type() == QEvent.MouseButtonRelease:
                 self.status = ImageStatus.Idle
             elif event.type() == QEvent.MouseMove:
                 # self.setWindowTitle(str(event.pos()))
                 self.status = ImageStatus.MinimapMove
                 if self.savedData.rowCount > 0:
-                    self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y / self.minimapLabel.size().height() - 0.5 * self.imLabel.size().height() / self.imageView.scale
-                    self.imageView.offset.x = event.pos().x() * self.savedData.arrayImagesSize[0][0][-1].x / self.minimapLabel.size().width() - 0.5 * self.imLabel.size().width() / self.imageView.scale
-                    self.setNewView()
-        elif obj is self.rightDocWidget:
+                    self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y / self.minimap_label.size().height() - 0.5 * self.im_label.size().height() / self.imageView.scale
+                    self.imageView.offset.x = event.pos().x() * self.savedData.arrayImagesSize[0][0][-1].x / self.minimap_label.size().width() - 0.5 * self.im_label.size().width() / self.imageView.scale
+                    self.set_new_view()
+        elif obj is self.right_doc_widget:
             if event.type() == QEvent.Hide:
-                self.viewMenuMainPanel.setChecked(False)
+                self.view_menu_main_panel.setChecked(False)
         return QMainWindow.eventFilter(self, obj, event)
 
     def resized(self):
         if self.savedData and self.savedData.rowCount > 0:
-            self.minScale = max(self.imLabel.size().height() / self.savedData.arrayImagesSize[0][-1][0].y, self.imLabel.size().width() / self.savedData.arrayImagesSize[0][0][-1].x)
-            if self.scaleEdit.value() < self.minScale:
-                self.scaleEdit.setValue(self.minScale)
-        self.setNewView()
+            self.minScale = max(self.im_label.size().height() / self.savedData.arrayImagesSize[0][-1][0].y, self.im_label.size().width() / self.savedData.arrayImagesSize[0][0][-1].x)
+            if self.scale_edit.value() < self.minScale:
+                self.scale_edit.setValue(self.minScale)
+        self.set_new_view()
 
     def closeEvent(self, event):
         if self.fileName and self.modified:
             dlgResult = QMessageBox.question(self, "Confirm Dialog", "Есть несохраненные изменения. Хотите их сохранить перед закрытием?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
             if dlgResult == QMessageBox.Yes:
-                self.saveFile()
+                self.save_file()
             elif dlgResult == QMessageBox.Cancel:
                 event.ignore()
                 return
-        if os.path.exists(self.EXTRACT_TEMP_SUBFOLDER):
-            shutil.rmtree(self.EXTRACT_TEMP_SUBFOLDER)
+        if os.path.exists(self.EXTRACT_TEMP_SUB_FOLDER):
+            shutil.rmtree(self.EXTRACT_TEMP_SUB_FOLDER)
 
     def saveFileAss(self):
-        self.saveFile(True)
+        self.save_file(True)
 
-    def saveFile(self, saveDlg = False):
-        if not self.EXTRACT_TEMP_SUBFOLDER:
+    def save_file(self, saveDlg = False):
+        if not self.EXTRACT_TEMP_SUB_FOLDER:
             return
         if self.savedData.rowCount < 1 or self.savedData.colCount < 1:
             return
@@ -767,8 +964,8 @@ class MainWindow(QMainWindow):
             else:
                 return
 
-        if self.savedData.save_to_file_xml(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, "settings.xml")):
-            self.savedData.folder = self.EXTRACT_TEMP_SUBFOLDER
+        if self.savedData.save_to_file_xml(os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, "settings.xml")):
+            self.savedData.folder = self.EXTRACT_TEMP_SUB_FOLDER
         else:
             err_dlg = QErrorMessage()
             err_dlg.setWindowTitle("Ошибка")
@@ -776,10 +973,10 @@ class MainWindow(QMainWindow):
             return
 
         z = zipfile.ZipFile(self.fileName, 'w')
-        for root, dirs, files in os.walk(self.EXTRACT_TEMP_SUBFOLDER):
+        for root, dirs, files in os.walk(self.EXTRACT_TEMP_SUB_FOLDER):
             for file in files:
                 if file:
-                    z.write(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, file), file, compress_type=zipfile.ZIP_DEFLATED)
+                    z.write(os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, file), file, compress_type=zipfile.ZIP_DEFLATED)
         self.modified = False
         self.setWindowTitle("Micros - " + self.fileName)
         dlgResult = QMessageBox.question(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
@@ -793,7 +990,7 @@ class MainWindow(QMainWindow):
                                              QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
                                              QMessageBox.Yes)
             if dlg_result == QMessageBox.Yes:
-                self.saveFile()
+                self.save_file()
             elif dlg_result == QMessageBox.Cancel:
                 return
 
@@ -803,25 +1000,25 @@ class MainWindow(QMainWindow):
                                         "All files (*.*);;Microscope scans (*.misc)",
                                         sel_filter)
         if len(a[0]) > 0:
-            self.EXTRACT_TEMP_SUBFOLDER = os.path.join(self.EXTRACT_TEMP_FOLDER, str(uuid.uuid4()))
-            os.mkdir(self.EXTRACT_TEMP_SUBFOLDER)
+            self.EXTRACT_TEMP_SUB_FOLDER = os.path.join(self.EXTRACT_TEMP_FOLDER, str(uuid.uuid4()))
+            os.mkdir(self.EXTRACT_TEMP_SUB_FOLDER)
             z = zipfile.PyZipFile(a[0])
-            z.extractall(self.EXTRACT_TEMP_SUBFOLDER)
+            z.extractall(self.EXTRACT_TEMP_SUB_FOLDER)
             sum_size = 0
-            for f in os.listdir(self.EXTRACT_TEMP_SUBFOLDER):
-                if os.path.isfile(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, f)):
-                    sum_size += os.path.getsize(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, f))
+            for f in os.listdir(self.EXTRACT_TEMP_SUB_FOLDER):
+                if os.path.isfile(os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, f)):
+                    sum_size += os.path.getsize(os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, f))
 
-            if self.savedData.load_from_file_xml(os.path.join(self.EXTRACT_TEMP_SUBFOLDER, "settings.xml")):
-                self.savedData.folder = self.EXTRACT_TEMP_SUBFOLDER
+            if self.savedData.load_from_file_xml(os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, "settings.xml")):
+                self.savedData.folder = self.EXTRACT_TEMP_SUB_FOLDER
                 self.savedData.prepare_scans()
-                path_to_minimap = os.path.join(self.EXTRACT_TEMP_SUBFOLDER, "mini.jpg")
+                path_to_minimap = os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, "mini.jpg")
                 if os.path.exists(path_to_minimap):
                     self.imageView.minimapBase = cv2.imread(path_to_minimap, cv2.IMREAD_COLOR)[:, :, ::-1]
                 self.fileName = a[0]
                 self.modified = False
                 self.savedData.set_all_image_in_memory(sum_size <= self.programSettings.fullLoadImageMemoryLimit)
-                self.servicesMenuAllInMemory.setChecked(sum_size <= self.programSettings.fullLoadImageMemoryLimit)
+                self.services_menu_all_in_memory.setChecked(sum_size <= self.programSettings.fullLoadImageMemoryLimit)
                 self.resized()
                 self.setWindowTitle("Micros - " + self.fileName)
             else:
@@ -831,293 +1028,91 @@ class MainWindow(QMainWindow):
 
     def minimap_check_box_changed(self, state):
         if state == Qt.Checked:
-            self.minimapLabel.show()
+            self.minimap_label.show()
         else:
-            self.minimapLabel.hide()
+            self.minimap_label.hide()
 
     def grid_check_box_changed(self, state):
         if state == Qt.Checked:
-            self.minimapLabel.show()
+            self.minimap_label.show()
         else:
-            self.minimapLabel.hide()
+            self.minimap_label.hide()
 
     def prepareScans(self):
         self.modified = self.savedData.prepare_scans(True)
 
-    def btn31_Click(self):
-        koefSize = 0.30
-        imgSize = Size()
-        imgSize.width = 3000
-        imgSize.height = 4000
-        conArea = Rect()
-        conArea.x = 1050
-        conArea.y = 1400
-        conArea.width = 900
-        conArea.height = 1200
+    def btn31_click(self):
+        img_size = Size()
+        img_size.width = 3000
+        img_size.height = 4000
+        con_area = Rect()
+        con_area.x = 1050
+        con_area.y = 1400
+        con_area.width = 900
+        con_area.height = 1200
 
-        sumImg = np.arange(0)
+        sum_img = np.arange(0)
         for i in range (5):
-            y1 = conArea.y
+            y1 = con_area.y
             if i == 0:
                 y1 = 0
-            y2 = conArea.y + conArea.height
+            y2 = con_area.y + con_area.height
             if i == 4:
-                y2 = imgSize.height
-            rowImg = np.arange(0)
+                y2 = img_size.height
+            row_img = np.arange(0)
             for j in range (11):
-                x1 = conArea.x
+                x1 = con_area.x
                 if j == 0:
                     x1 = 0
-                x2 = conArea.x + conArea.width
+                x2 = con_area.x + con_area.width
                 if j == 10:
-                    x2 = imgSize.width
-                fileName = "/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_" + str(i+1) + "_" + str(j+1) + ".jpg";
-                img = cv2.imread(fileName)
+                    x2 = img_size.width
+                file_name = "/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_" + \
+                            str(i+1) + "_" + str(j+1) + ".jpg"
+                img = cv2.imread(file_name)
                 img2 = np.copy(img[y1:y2, x1:x2, :])
-                if rowImg.size == 0:
-                    rowImg = np.copy(img2)
+                if row_img.size == 0:
+                    row_img = np.copy(img2)
                 else:
-                    rowImg = np.concatenate((rowImg, img2), axis=1)
+                    row_img = np.concatenate((row_img, img2), axis=1)
 
-            if sumImg.size == 0:
-                sumImg = np.copy(rowImg)
+            if sum_img.size == 0:
+                sum_img = np.copy(row_img)
             else:
-                sumImg = np.concatenate((sumImg, rowImg), axis=0)
+                sum_img = np.concatenate((sum_img, row_img), axis=0)
 
-        cv2.imwrite("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/sumImg.jpg", sumImg)
+        cv2.imwrite("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/sum_img.jpg",
+                    sum_img)
 
-    def setNewView(self):
+    def set_new_view(self):
         if not self.savedData or self.savedData.rowCount == 0:
             return
-        mainImg, miniImg = self.imageView.get_view(self.scaleEdit.value(), self.imLabel.size())
-        qImg = numpy_q_image(mainImg)
-        pixmap = QtGui.QPixmap.fromImage(qImg)
-        self.imLabel.setPixmap(pixmap)
-        qMiniImg = numpy_q_image(miniImg)
-        pixmapMini = QtGui.QPixmap.fromImage(qMiniImg)
-        self.minimapLabel.setPixmap(pixmapMini)
+        main_img, mini_img = self.imageView.get_view(self.scale_edit.value(), self.im_label.size())
+        q_img = numpy_q_image(main_img)
+        pixmap = QtGui.QPixmap.fromImage(q_img)
+        self.im_label.setPixmap(pixmap)
+        q_mini_img = numpy_q_image(mini_img)
+        pixmap_mini = QtGui.QPixmap.fromImage(q_mini_img)
+        self.minimap_label.setPixmap(pixmap_mini)
 
-    def scaleEdit_Change(self):
-        self.setNewView()
+    def scale_edit_change(self):
+        self.set_new_view()
 
-    def viewMenuMainPanel_Click(self):
-        if self.viewMenuMainPanel.isChecked():
-            self.rightDocWidget.show()
+    def view_menu_main_panel_click(self):
+        if self.view_menu_main_panel.isChecked():
+            self.right_doc_widget.show()
         else:
-            self.rightDocWidget.hide()
+            self.right_doc_widget.hide()
 
-    def servicesMenuSettings_Click(self):
-        settingsDialog = SettingsDialog()
-        settingsDialog.setAttribute(Qt.WA_DeleteOnClose)
-        settingsDialog.exec()
+    @staticmethod
+    def services_menu_settings_click():
+        settings_dialog = SettingsDialog()
+        settings_dialog.setAttribute(Qt.WA_DeleteOnClose)
+        settings_dialog.exec()
 
-    def servicesMenuAllInMemory_Click(self):
-        self.savedData.set_all_image_in_memory(self.servicesMenuAllInMemory.isChecked())
+    def services_menu_all_in_memory_click(self):
+        self.savedData.set_all_image_in_memory(self.services_menu_all_in_memory.isChecked())
         self.resized()
-
-
-    def initUI(self):
-        self.setWindowTitle('Micros')
-        # Основное меню
-        menuBar = self.menuBar()
-        # Меню "Файл"
-        fileMenu = menuBar.addMenu("&Файл")
-        fileMenuANew = QAction("&Новый", self)
-        fileMenuANew.setShortcut("Ctrl+N")
-        fileMenuANew.setStatusTip("Новое сканирование")
-        #fileMenuANew.triggered.connect(self.close)
-        fileMenu.addAction(fileMenuANew)
-        fileMenu.addSeparator()
-        fileMenuAOpen = QAction("&Открыть", self)
-        fileMenuAOpen.setShortcut("Ctrl+O")
-        fileMenuAOpen.setStatusTip("Открыть существующее изображение")
-        fileMenuAOpen.triggered.connect(self.openFile)
-        fileMenu.addAction(fileMenuAOpen)
-        fileMenu.addSeparator()
-        fileMenuASave = fileMenu.addAction("&Сохранить")
-        fileMenuASave.setShortcut("Ctrl+S")
-        fileMenuASave.setStatusTip("Сохранить изменения")
-        fileMenuASave.triggered.connect(self.saveFile)
-        fileMenuASaveAss = fileMenu.addAction("Сохранить как...")
-        fileMenuASaveAss.setShortcut("Ctrl+Shift+S")
-        fileMenuASaveAss.setStatusTip("Сохранить текущее изображение в другом файле...")
-        fileMenuASaveAss.triggered.connect(self.saveFileAss)
-        fileMenu.addSeparator()
-        fileMenuAExit = QAction("&Выйти", self)
-        fileMenuAExit.setShortcut("Ctrl+Q")
-        fileMenuAExit.setStatusTip("Закрыть приложение")
-        fileMenuAExit.triggered.connect(self.close)
-        fileMenu.addAction(fileMenuAExit)
-        menuBar.addMenu(fileMenu)
-        # Меню "Вид"
-        viewMenu = menuBar.addMenu("&Вид")
-        self.viewMenuMainPanel = QAction("Основная &панель", self)
-        self.viewMenuMainPanel.setShortcut("Ctrl+T")
-        self.viewMenuMainPanel.setStatusTip("Отображать основную панель")
-        self.viewMenuMainPanel.triggered.connect(self.viewMenuMainPanel_Click)
-        self.viewMenuMainPanel.setCheckable(True)
-        self.viewMenuMainPanel.setChecked(True)
-        viewMenu.addAction(self.viewMenuMainPanel)
-        menuBar.addMenu(viewMenu)
-         # Меню "Настройки"
-        servicesMenu = menuBar.addMenu("&Сервис")
-        self.servicesMenuAllInMemory = QAction("&Буферизировать изображение", self)
-        self.servicesMenuAllInMemory.setShortcut("Ctrl+M")
-        self.servicesMenuAllInMemory.setStatusTip("Разместить все части изображения в памяти, что увеличит скорость навигации по нему")
-        self.servicesMenuAllInMemory.triggered.connect(self.servicesMenuAllInMemory_Click)
-        self.servicesMenuAllInMemory.setCheckable(True)
-        self.servicesMenuAllInMemory.setChecked(False)
-        servicesMenu.addAction(self.servicesMenuAllInMemory)
-        servicesMenu.addSeparator()
-        self.servicesMenuSettings = QAction("Настройки", self)
-        self.servicesMenuSettings.setStatusTip("Изменить основные настройки программы")
-        self.servicesMenuSettings.triggered.connect(self.servicesMenuSettings_Click)
-        servicesMenu.addAction(self.servicesMenuSettings)
-        menuBar.addMenu(servicesMenu)
-        #self.viewMenuMainPanel = QAction("Основная &панель", self)
-        #self.viewMenuMainPanel.setShortcut("Ctrl+T")
-        #self.viewMenuMainPanel.setStatusTip("Отображать основную панель")
-        #self.viewMenuMainPanel.triggered.connect(self.viewMenuMainPanel_Click)
-        #self.viewMenuMainPanel.setCheckable(True)
-        #self.viewMenuMainPanel.setChecked(True)
-        #viewMenu.addAction(self.viewMenuMainPanel)
-
-
-
-        # Элементы формы
-
-        # Левые элементы
-        """leftLayout = QVBoxLayout()
-        btn1 = QPushButton("Load")
-        btn1.setMaximumWidth(150)
-        leftLayout.addWidget(btn1)
-        leftLayout.addStretch(0)
-        mainLayout.addLayout(leftLayout)"""
-
-        # Центральные элементы, включая изображение
-        mainLayout = QHBoxLayout(self)
-        mainWidget = QWidget(self)
-        #mainWidget.setLayout(mainLayout)
-        centralLayout = QVBoxLayout()
-        mainWidget.setLayout(centralLayout)
-        #self.imLabel = ClickedLabel()
-        self.imLabel = QLabel()
-
-        #img2 = cv2.imread("/home/krasnov/Pictures/схема_Уберподробно/beforeRotate/2_7.jpg", cv2.IMREAD_COLOR)[:, :, ::-1]
-        #height, width = img.shape[:2]
-        #start_row, strt_col = int(height * 0.00), int(width * 0.00)
-        #end_row, end_col = int(height * 1.00), int(width * 1.00)
-        #croped = img[start_row:end_row, strt_col:end_col].copy()
-        """img = cv2.imread("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_3_7.jpg", cv2.IMREAD_COLOR)[:, :, ::-1]
-        croped = img.copy()
-        qImg = numpyQImage(croped)
-        pixmap = QtGui.QPixmap.fromImage(qImg)
-        self.imLabel.setPixmap(pixmap)"""
-        #pixmap = pixmap.scaled(self.imLabel.size(), Qt.KeepAspectRatio)
-        #imQ = QImage(img.data,img.cols,img.cols,QImage.Format_Grayscale16)
-        #pixmap = QPixmap("/home/krasnov/Pictures/P_20191028_093917.jpg")
-        #pixmap = QPixmap.fromImage(imQ)
-
-
-        #self.imLabel.setMaximumSize(1200, 800)
-        #self.imLabel.setFixedSize(1200, 800)
-        #self.imLabel.setAlignment(Qt.AlignCenter)
-        self.imLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.imLabel.setStyleSheet("border: 1px solid red")
-        #self.imLabel.mouseReleased.connect(self.imLabel_MouseReleased)
-        #self.imLabel.resized.connect(self.imLabel_Resize)
-        self.imLabel.installEventFilter(self)
-
-        #self.setWindowTitle(str(self.imLabel.size().width()) + "x" + str(self.imLabel.size().height()))
-        #self.setWindowTitle(str(random.randint(1,44)))
-
-        centralLayout.addWidget(self.imLabel)
-
-        minimapLayout = QGridLayout()
-        self.imLabel.setLayout(minimapLayout)
-
-        self.minimapLabel = QLabel()
-        #imgMini = cv2.imread("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/mini.jpg", cv2.IMREAD_COLOR)[:, :, ::-1]
-        #cropedMini = imgMini.copy()
-        #qImgMini = numpyQImage(cropedMini)
-        #pixmapMini = QtGui.QPixmap.fromImage(qImgMini)
-        #pixmapMini = pixmapMini.scaled(self.minimapLabel.size(), Qt.KeepAspectRatio)
-
-        #self.minimapLabel.setPixmap(pixmapMini)
-        #self.minimapLabel.setFixedSize(pixmapMini.size())
-        self.minimapLabel.installEventFilter(self)
-
-        minimapLayout.setRowStretch(0,1)
-        minimapLayout.setColumnStretch(0,1)
-        minimapLayout.addWidget(self.minimapLabel, 1, 1)
-
-        messageEdit = QTextEdit(self)
-        messageEdit.setEnabled(False)
-
-        messageEdit.setText("Hello, world!")
-
-        messageEdit.setFixedHeight(100)
-        messageEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-        centralLayout.addWidget(messageEdit)
-        #mainLayout.addLayout(centralLayout)
-        # Правые элементы
-        self.rightDocWidget = QDockWidget("Dock Widget", self)
-        self.rightDocWidget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
-        rightLayout = QVBoxLayout(self)
-
-        btn31 = QPushButton("MegaImg", self)
-        btn31.clicked.connect(self.btn31_Click)
-        btn32 = QPushButton("Prepare", self)
-        btn32.clicked.connect(self.prepareScans)
-        btn33 = QPushButton("View", self)
-        rightLayout.addWidget(btn31)
-        rightLayout.addWidget(btn32)
-        rightLayout.addWidget(btn33)
-
-        minimap_check_box = QCheckBox("Мини-изображение", self)
-        minimap_check_box.stateChanged.connect(self.minimap_check_box_changed)
-        minimap_check_box.setCheckState(Qt.Checked)
-        rightLayout.addWidget(minimap_check_box)
-
-        grid_check_box = QCheckBox("Сетка", self)
-        grid_check_box.stateChanged.connect(self.grid_check_box_changed)
-        grid_check_box.setCheckState(Qt.Checked)
-        rightLayout.addWidget(grid_check_box)
-
-        rightLayout.addSpacing(50)
-
-        labScale = QLabel("Увеличение")
-        self.scaleEdit = QDoubleSpinBox()
-        self.scaleEdit.setMinimum(0.001)
-        self.scaleEdit.setMaximum(10.0)
-        self.scaleEdit.setValue(1.0)
-        self.scaleEdit.setSingleStep(0.01)
-        self.scaleEdit.setDecimals(3)
-        self.scaleEdit.valueChanged.connect(self.scaleEdit_Change)
-        rightLayout.addWidget(labScale)
-        rightLayout.addWidget(self.scaleEdit)
-
-        rightLayout.addStretch(0)
-
-        rightDockWidgetContents = QWidget()
-        rightDockWidgetContents.setLayout(rightLayout)
-        #self.rightDocWidget.setLayout(rightLayout)
-        self.rightDocWidget.setWidget(rightDockWidgetContents)
-        self.rightDocWidget.installEventFilter(self)
-
-        #mainLayout.addLayout(rightLayout)
-
-
-        self.setCentralWidget(mainWidget)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.rightDocWidget)
-
-        self.statusBar().setStatusTip("Ready")
-
-        self.resize(1280, 720)
-        self.move(300, 300)
-        self.setMinimumSize(800, 600)
-
-        self.show()
 
 
 if __name__ == '__main__':
