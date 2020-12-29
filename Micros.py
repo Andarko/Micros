@@ -19,6 +19,8 @@ from lxml import etree
 
 from SettingsDialog import SettingsDialog, ProgramSettings
 import xml.etree.ElementTree as Xml
+import scan
+# import ScanWindow from scan
 
 
 class Point(object):
@@ -578,13 +580,13 @@ def numpy_q_image(image):
 
 
 # Окно нового сканирования
-class ScanWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-
-    def open_file(self):
-        return
+# class ScanWindow(QMainWindow):
+#     def __init__(self):
+#         super().__init__()
+#         self.initUI()
+#
+#     def open_file(self):
+#         return
 
 
 class ImageStatus(Enum):
@@ -634,13 +636,13 @@ class MainWindow(QMainWindow):
         file_menu_a_new = QAction("&Новый", self)
         file_menu_a_new.setShortcut("Ctrl+N")
         file_menu_a_new.setStatusTip("Новое сканирование")
-        # file_menu_a_new.triggered.connect(self.close)
+        file_menu_a_new.triggered.connect(self.new_scan)
         file_menu.addAction(file_menu_a_new)
         file_menu.addSeparator()
         file_menu_a_open = QAction("&Открыть", self)
         file_menu_a_open.setShortcut("Ctrl+O")
         file_menu_a_open.setStatusTip("Открыть существующее изображение")
-        file_menu_a_open.triggered.connect(self.openFile)
+        file_menu_a_open.triggered.connect(self.open_file)
         file_menu.addAction(file_menu_a_open)
         file_menu.addSeparator()
         file_menu_a_save = file_menu.addAction("&Сохранить")
@@ -650,7 +652,7 @@ class MainWindow(QMainWindow):
         file_menu_a_save_ass = file_menu.addAction("Сохранить как...")
         file_menu_a_save_ass.setShortcut("Ctrl+Shift+S")
         file_menu_a_save_ass.setStatusTip("Сохранить текущее изображение в другом файле...")
-        file_menu_a_save_ass.triggered.connect(self.saveFileAss)
+        file_menu_a_save_ass.triggered.connect(self.save_file_ass)
         file_menu.addSeparator()
         file_menu_a_exit = QAction("&Выйти", self)
         file_menu_a_exit.setShortcut("Ctrl+Q")
@@ -717,12 +719,14 @@ class MainWindow(QMainWindow):
         # start_row, strt_col = int(height * 0.00), int(width * 0.00)
         # end_row, end_col = int(height * 1.00), int(width * 1.00)
         # croped = img[start_row:end_row, strt_col:end_col].copy()
-        """img = cv2.imread("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_3_7.jpg"
-        , cv2.IMREAD_COLOR)[:, :, ::-1]
-        croped = img.copy()
-        qImg = numpyQImage(croped)
-        pixmap = QtGui.QPixmap.fromImage(qImg)
-        self.imLabel.setPixmap(pixmap)"""
+
+        # img = cv2.imread("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_3_7.jpg"
+        # , cv2.IMREAD_COLOR)[:, :, ::-1]
+        # croped = img.copy()
+        # qImg = numpyQImage(croped)
+        # pixmap = QtGui.QPixmap.fromImage(qImg)
+        # self.imLabel.setPixmap(pixmap)
+
         # pixmap = pixmap.scaled(self.imLabel.size(), Qt.KeepAspectRatio)
         # imQ = QImage(img.data,img.cols,img.cols,QImage.Format_Grayscale16)
         # pixmap = QPixmap("/home/krasnov/Pictures/P_20191028_093917.jpg")
@@ -780,7 +784,7 @@ class MainWindow(QMainWindow):
         btn31 = QPushButton("MegaImg", self)
         btn31.clicked.connect(self.btn31_click)
         btn32 = QPushButton("Prepare", self)
-        btn32.clicked.connect(self.prepareScans)
+        btn32.clicked.connect(self.prepare_scans)
         btn33 = QPushButton("View", self)
         right_layout.addWidget(btn31)
         right_layout.addWidget(btn32)
@@ -939,15 +943,21 @@ class MainWindow(QMainWindow):
         if os.path.exists(self.EXTRACT_TEMP_SUB_FOLDER):
             shutil.rmtree(self.EXTRACT_TEMP_SUB_FOLDER)
 
-    def saveFileAss(self):
+    def new_scan(self):
+        scan_dialog = scan.ScanWindow(self)
+        scan_dialog.setAttribute(Qt.WA_DeleteOnClose)
+        scan_dialog.show()
+        self.hide()
+
+    def save_file_ass(self):
         self.save_file(True)
 
-    def save_file(self, saveDlg = False):
+    def save_file(self, save_dlg=False):
         if not self.EXTRACT_TEMP_SUB_FOLDER:
             return
         if self.savedData.rowCount < 1 or self.savedData.colCount < 1:
             return
-        if saveDlg or not self.fileName:
+        if save_dlg or not self.fileName:
             sel_filter = "Microscope scans (*.misc)"
             a = QFileDialog.getSaveFileName(self, "Выберите место сохранения файла", "/", "All files (*.*);;Microscope scans (*.misc)", sel_filter)
             if len(a[0]) > 0:
@@ -957,8 +967,8 @@ class MainWindow(QMainWindow):
                 else:
                     self.fileName = ext[0] + ".misc"
                 if os.path.exists(self.fileName):
-                    dlgResult = QMessageBox.question(self, "Confirm Dialog", "Файл уже существует. Хотите его перезаписать? Это удалит данные в нем", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-                    if dlgResult == QMessageBox.No:
+                    dlg_result = QMessageBox.question(self, "Confirm Dialog", "Файл уже существует. Хотите его перезаписать? Это удалит данные в нем", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    if dlg_result == QMessageBox.No:
                         return
 
             else:
@@ -979,16 +989,17 @@ class MainWindow(QMainWindow):
                     z.write(os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, file), file, compress_type=zipfile.ZIP_DEFLATED)
         self.modified = False
         self.setWindowTitle("Micros - " + self.fileName)
-        dlgResult = QMessageBox.question(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
+        dlg_result = QMessageBox.question(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
 
-    def openFile(self):
+    def open_file(self):
         sel_filter = "Microscope scans (*.misc)"
         if self.fileName and self.modified:
             dlg_result = QMessageBox.question(self,
-                                             "Confirm Dialog",
-                                             "Есть несохраненные изменения в текущем файле. Хотите сперва их сохранить?",
-                                             QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-                                             QMessageBox.Yes)
+                                              "Confirm Dialog",
+                                              "Есть несохраненные изменения в текущем файле." +
+                                              " Хотите сперва их сохранить?",
+                                              QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                                              QMessageBox.Yes)
             if dlg_result == QMessageBox.Yes:
                 self.save_file()
             elif dlg_result == QMessageBox.Cancel:
@@ -1024,7 +1035,8 @@ class MainWindow(QMainWindow):
             else:
                 err_dlg = QErrorMessage()
                 err_dlg.setWindowTitle("Ошибка")
-                err_dlg.showMessage("Произошла непредвиденная ошибка чтения файла. Возможно открываемый файл имеет неподходячщий формат или поврежден!")
+                err_dlg.showMessage("Произошла непредвиденная ошибка чтения файла. Возможно открываемый файл имеет " +
+                                    "неподходячщий формат или поврежден!")
 
     def minimap_check_box_changed(self, state):
         if state == Qt.Checked:
@@ -1038,7 +1050,7 @@ class MainWindow(QMainWindow):
         else:
             self.minimap_label.hide()
 
-    def prepareScans(self):
+    def prepare_scans(self):
         self.modified = self.savedData.prepare_scans(True)
 
     def btn31_click(self):
