@@ -239,8 +239,7 @@ class ScanWindow(QMainWindow):
         self.resize(1280, 720)
         self.move(300, 300)
         self.setMinimumSize(800, 600)
-
-        self.show()
+        # self.show()
 
     # Тестовая обертка функции движения, чтобы обходиться без подключенного станка
     def coord_move(self, coord, mode="discrete", crop=False):
@@ -273,7 +272,8 @@ class ScanWindow(QMainWindow):
                     return
             elif dlg_result == QMessageBox.Cancel:
                 event.ignore()
-        # self.main_window.show()
+        self.main_window.show()
+        time.sleep(0.01)
         self.closed = True
 
     def services_menu_action_settings_click(self):
@@ -334,16 +334,18 @@ class ScanWindow(QMainWindow):
 
     # Тестовая функция для рисования круга и спирали
     def test_circle(self):
-        self.table_controller.coord_check()
-        count = 200
-        r = 0.0
-        # r = 20
-        for i in range(20*count + 1):
-            r += 1 / 10
-            alfa = (i / count) * 2 * math.pi
-            dx = int(r * math.sin(alfa))
-            dy = int(r * math.cos(alfa))
-            self.coord_move([dx, dy, 0], mode='continuous')
+        self.main_window.show()
+        self.close()
+        # self.table_controller.coord_check()
+        # count = 200
+        # r = 0.0
+        # # r = 20
+        # for i in range(20*count + 1):
+        #     r += 1 / 10
+        #     alfa = (i / count) * 2 * math.pi
+        #     dx = int(r * math.sin(alfa))
+        #     dy = int(r * math.cos(alfa))
+        #     self.coord_move([dx, dy, 0], mode='continuous')
 
             # self.micros_controller.coord_move([self.micros_controller.coord[0] + dx,
             #                                    self.micros_controller.coord[1] + dy,

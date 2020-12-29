@@ -599,6 +599,8 @@ class ImageStatus(Enum):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.scan_window = scan.ScanWindow(self)
+        # self.scan_window.setAttribute(Qt.WA_DeleteOnClose)
         self.savedData = SavedData("")
         self.view_menu_main_panel = QAction()
         self.services_menu_all_in_memory = QAction()
@@ -944,9 +946,7 @@ class MainWindow(QMainWindow):
             shutil.rmtree(self.EXTRACT_TEMP_SUB_FOLDER)
 
     def new_scan(self):
-        scan_dialog = scan.ScanWindow(self)
-        scan_dialog.setAttribute(Qt.WA_DeleteOnClose)
-        scan_dialog.show()
+        self.scan_window.show()
         self.hide()
 
     def save_file_ass(self):
