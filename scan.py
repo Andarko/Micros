@@ -396,8 +396,8 @@ class ScanWindow(QMainWindow):
 
             for direction in direction_sequence:
                 # Берем следующий фрейм до тех пор, пока не выйдем за границу изделтя
-                next_frame = True
-                while next_frame:
+                print("direction=" + str(direction))
+                while True:
                     # При наличии предыдущего направления движения (все, кроме первого направления)
                     # проверяем, не смещается ли изделие поперек линии поиска
                     if previous_direction:
@@ -423,8 +423,23 @@ class ScanWindow(QMainWindow):
                             #             limit_break = True
                             # if limit_break:
                             #     break
-                            x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
-                            y -= int(self.delta_y * steps_count * previous_direction[1] / self.pixels_in_mm)
+                            # Проверяем - не вышли ли мы за пределы стола
+                            while True:
+                                x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
+                                y -= int(self.delta_y * steps_count * previous_direction[1] / self.pixels_in_mm)
+                                if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
+                                        self.table_controller.limits_mm[1]:
+                                    x = all_x[-1]
+                                    y = all_y[-1]
+                                    steps_count -= 1
+                                    if steps_count == 0:
+                                        break
+                                else:
+                                    break
+                            if steps_count == 0:
+                                break
+                            # x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
+                            # y -= int(self.delta_y * steps_count * previous_direction[1] / self.pixels_in_mm)
                             all_x.append(x)
                             all_y.append(y)
                             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
@@ -463,8 +478,22 @@ class ScanWindow(QMainWindow):
                             #             limit_break = True
                             # if limit_break:
                             #     break
-                            x += int(self.delta_x * steps_count * previous_opposite_direction[0] / self.pixels_in_mm)
-                            y -= int(self.delta_y * steps_count * previous_opposite_direction[1] / self.pixels_in_mm)
+                            while True:
+                                x += int(self.delta_x * steps_count * previous_opposite_direction[0] / self.pixels_in_mm)
+                                y -= int(self.delta_y * steps_count * previous_opposite_direction[1] / self.pixels_in_mm)
+                                if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
+                                        self.table_controller.limits_mm[1]:
+                                    x = all_x[-1]
+                                    y = all_y[-1]
+                                    steps_count -= 1
+                                    if steps_count == 0:
+                                        break
+                                else:
+                                    break
+                            if steps_count == 0:
+                                break
+                            # x += int(self.delta_x * steps_count * previous_opposite_direction[0] / self.pixels_in_mm)
+                            # y -= int(self.delta_y * steps_count * previous_opposite_direction[1] / self.pixels_in_mm)
                             all_x.append(x)
                             all_y.append(y)
                             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
@@ -477,34 +506,30 @@ class ScanWindow(QMainWindow):
                     steps_count = self.find_border_in_image(snap, direction, [self.delta_x, self.delta_y])
                     # Можно идти в направлении поиска границы еще
                     if steps_count > 0:
-                        # # Проверяем - не вышли ли мы за пределы стола
-                        # check_limit = True
-                        # limit_break = False
-                        # while check_limit:
-                        #     check_limit = False
-                        #     x += int(self.delta_x * direction[0] * steps_count / self.pixels_in_mm)
-                        #     y -= int(self.delta_y * direction[1] * steps_count / self.pixels_in_mm)
-                        #     if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
-                        #             self.table_controller.limits_mm[1]:
-                        #         x = all_x[-1]
-                        #         y = all_y[-1]
-                        #         steps_count -= 1
-                        #         if steps_count == 0:
-                        #             break
-                        #     else:
-                        #         break
-                        # if steps_count == 0:
-                        #     next_frame = False
-                        #     break
-                        x += int(self.delta_x * direction[0] * steps_count / self.pixels_in_mm)
-                        y -= int(self.delta_y * direction[1] * steps_count / self.pixels_in_mm)
+                        # Проверяем - не вышли ли мы за пределы стола
+                        while True:
+                            x += int(self.delta_x * direction[0] * steps_count / self.pixels_in_mm)
+                            y -= int(self.delta_y * direction[1] * steps_count / self.pixels_in_mm)
+                            if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
+                                    self.table_controller.limits_mm[1]:
+                                x = all_x[-1]
+                                y = all_y[-1]
+                                steps_count -= 1
+                                if steps_count == 0:
+                                    break
+                            else:
+                                break
+                        if steps_count == 0:
+                            break
+                        # x += int(self.delta_x * direction[0] * steps_count / self.pixels_in_mm)
+                        # y -= int(self.delta_y * direction[1] * steps_count / self.pixels_in_mm)
                         all_x.append(x)
                         all_y.append(y)
                         snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
 
                         print('x = ' + str(x) + '; y = ' + str(y))
                     else:
-                        next_frame = False
+                        break
                 previous_direction = direction
             self.edt_border_x1.setText(str(min(all_x)))
             self.edt_border_y1.setText(str(min(all_y)))
@@ -541,6 +566,25 @@ class ScanWindow(QMainWindow):
                         return i
 
         return 0
+
+    @staticmethod
+    # Комбинированный метод, следящий за тем, чтобы камера фокусировалась на середине объекта
+    # HERE
+    def check_object_middle(img, direction, delta):
+        if direction[0] != 0:
+            middle = int(img.shape[1] / 2)
+            for i in range(11):
+                white_line = True
+                limit_not_white = int(img.shape[0] / 50)
+                x = i * delta[0]
+                for y in range(img.shape[0]):
+                    if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
+                        limit_not_white -= 1
+                        if limit_not_white <= 0:
+                            white_line = False
+                            break
+                if white:
+                    return i
 
     @staticmethod
     # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала от объекта
@@ -801,7 +845,6 @@ class ScanWindow(QMainWindow):
         self.unsaved = False
 
         self.main_window.open_file(file_name)
-        # HERE
         return True
 
     # Обработчики событий формы и ее компонентов
@@ -895,7 +938,7 @@ class KeyboardButton:
 # Класс управления микроскопом (пока тестовая подделка)
 class MicrosController:
     def __init__(self, test: bool):
-        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard.jpg"
+        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_6.jpg"
         self.test_img = cv2.imread(self.test_img_path)[:, :, ::-1]
         self.test = test
         self.frame = list()
@@ -954,7 +997,7 @@ class MicrosController:
 
     def snap(self, x1: int, y1: int, x2: int, y2: int, crop=False):
         if self.test:
-            time.sleep(0.1)
+            time.sleep(0.5)
             # return np.copy(self.test_img[y1:y2, x1:x2, :])
             # Переворачиваем координаты съемки
             y2_r = 6400 - y1
