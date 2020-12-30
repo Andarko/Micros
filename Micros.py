@@ -620,7 +620,7 @@ class MainWindow(QMainWindow):
                         shutil.rmtree(os.path.join(self.EXTRACT_TEMP_FOLDER, folder))
         self.startMousePos = Point()
         self.status = ImageStatus.Idle
-        self.fileName = ""
+        self.file_name = ""
         self.modified = False
         self.minScale = 0.001
         self.maxScale = 10.0
@@ -935,7 +935,7 @@ class MainWindow(QMainWindow):
         self.set_new_view()
 
     def closeEvent(self, event):
-        if self.fileName and self.modified:
+        if self.file_name and self.modified:
             dlgResult = QMessageBox.question(self, "Confirm Dialog", "Есть несохраненные изменения. Хотите их сохранить перед закрытием?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
             if dlgResult == QMessageBox.Yes:
                 self.save_file()
@@ -945,9 +945,24 @@ class MainWindow(QMainWindow):
         if os.path.exists(self.EXTRACT_TEMP_SUB_FOLDER):
             shutil.rmtree(self.EXTRACT_TEMP_SUB_FOLDER)
 
+    def prepare_to_close_file(self):
+        if self.file_name and self.modified:
+            dlg_result = QMessageBox.question(self,
+                                              "Confirm Dialog",
+                                              "Есть несохраненные изменения в текущем файле." +
+                                              " Хотите сперва их сохранить?",
+                                              QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                                              QMessageBox.Yes)
+            if dlg_result == QMessageBox.Yes:
+                self.save_file()
+            elif dlg_result == QMessageBox.Cancel:
+                return False
+        return True
+
     def new_scan(self):
-        self.scan_window.show()
-        self.hide()
+        if self.prepare_to_close_file():
+            self.scan_window.show()
+            self.hide()
 
     def save_file_ass(self):
         self.save_file(True)
@@ -957,17 +972,20 @@ class MainWindow(QMainWindow):
             return
         if self.savedData.rowCount < 1 or self.savedData.colCount < 1:
             return
-        if save_dlg or not self.fileName:
-            sel_filter = "Microscope scans (*.misc)"
-            a = QFileDialog.getSaveFileName(self, "Выберите место сохранения файла", "/", "All files (*.*);;Microscope scans (*.misc)", sel_filter)
+        if save_dlg or not self.file_name:
+            a = QFileDialog.getSaveFileName(self, "Выберите место сохранения файла", "/",
+                                            "All files (*.*);;Microscope scans (*.misc)", "Microscope scans (*.misc)")
             if len(a[0]) > 0:
                 ext = os.path.splitext(a[0])
                 if ext[1] == ".misc":
-                    self.fileName = a[0]
+                    self.file_name = a[0]
                 else:
-                    self.fileName = ext[0] + ".misc"
-                if os.path.exists(self.fileName):
-                    dlg_result = QMessageBox.question(self, "Confirm Dialog", "Файл уже существует. Хотите его перезаписать? Это удалит данные в нем", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                    self.file_name = ext[0] + ".misc"
+                if os.path.exists(self.file_name):
+                    dlg_result = QMessageBox.question(self, "Confirm Dialog",
+                                                      "Файл уже существует. Хотите его перезаписать? " +
+                                                      "Это удалит данные в нем",
+                                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                     if dlg_result == QMessageBox.No:
                         return
 
@@ -982,38 +1000,43 @@ class MainWindow(QMainWindow):
             err_dlg.showMessage("Произошла непредвиденная ошибка записи файла!")
             return
 
-        z = zipfile.ZipFile(self.fileName, 'w')
+        z = zipfile.ZipFile(self.file_name, 'w')
         for root, dirs, files in os.walk(self.EXTRACT_TEMP_SUB_FOLDER):
             for file in files:
                 if file:
                     z.write(os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, file), file, compress_type=zipfile.ZIP_DEFLATED)
         self.modified = False
-        self.setWindowTitle("Micros - " + self.fileName)
+        self.setWindowTitle("Micros - " + self.file_name)
         dlg_result = QMessageBox.question(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
 
-    def open_file(self):
-        sel_filter = "Microscope scans (*.misc)"
-        if self.fileName and self.modified:
-            dlg_result = QMessageBox.question(self,
-                                              "Confirm Dialog",
-                                              "Есть несохраненные изменения в текущем файле." +
-                                              " Хотите сперва их сохранить?",
-                                              QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
-                                              QMessageBox.Yes)
-            if dlg_result == QMessageBox.Yes:
-                self.save_file()
-            elif dlg_result == QMessageBox.Cancel:
+    def open_file(self, file_name=""):
+        # sel_filter = "Microscope scans (*.misc)"
+        # if self.file_name and self.modified:
+        #     dlg_result = QMessageBox.question(self,
+        #                                       "Confirm Dialog",
+        #                                       "Есть несохраненные изменения в текущем файле." +
+        #                                       " Хотите сперва их сохранить?",
+        #                                       QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+        #                                       QMessageBox.Yes)
+        #     if dlg_result == QMessageBox.Yes:
+        #         self.save_file()
+        #     elif dlg_result == QMessageBox.Cancel:
+        #         return
+        if not file_name:
+            if not self.prepare_to_close_file():
                 return
 
-        a = QFileDialog.getOpenFileName(self,
-                                        "Выберите файл изображения",
-                                        "/",
-                                        "All files (*.*);;Microscope scans (*.misc)",
-                                        sel_filter)
-        if len(a[0]) > 0:
+            a = QFileDialog.getOpenFileName(self,
+                                            "Выберите файл изображения",
+                                            "/",
+                                            "All files (*.*);;Microscope scans (*.misc)",
+                                            "Microscope scans (*.misc)")
+            file_name = a[0]
+        if len(file_name) > 0:
+            print(file_name)
             self.EXTRACT_TEMP_SUB_FOLDER = os.path.join(self.EXTRACT_TEMP_FOLDER, str(uuid.uuid4()))
             os.mkdir(self.EXTRACT_TEMP_SUB_FOLDER)
-            z = zipfile.PyZipFile(a[0])
+            z = zipfile.PyZipFile(file_name)
             z.extractall(self.EXTRACT_TEMP_SUB_FOLDER)
             sum_size = 0
             for f in os.listdir(self.EXTRACT_TEMP_SUB_FOLDER):
@@ -1026,12 +1049,12 @@ class MainWindow(QMainWindow):
                 path_to_minimap = os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, "mini.jpg")
                 if os.path.exists(path_to_minimap):
                     self.imageView.minimapBase = cv2.imread(path_to_minimap, cv2.IMREAD_COLOR)[:, :, ::-1]
-                self.fileName = a[0]
+                self.file_name = file_name
                 self.modified = False
                 self.savedData.set_all_image_in_memory(sum_size <= self.programSettings.fullLoadImageMemoryLimit)
                 self.services_menu_all_in_memory.setChecked(sum_size <= self.programSettings.fullLoadImageMemoryLimit)
                 self.resized()
-                self.setWindowTitle("Micros - " + self.fileName)
+                self.setWindowTitle("Micros - " + self.file_name)
             else:
                 err_dlg = QErrorMessage()
                 err_dlg.setWindowTitle("Ошибка")

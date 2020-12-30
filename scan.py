@@ -11,7 +11,7 @@ import websockets
 
 from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QSizePolicy, QFileDialog, QMessageBox
-from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout, QDialog
+from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
 from PyQt5.QtWidgets import QAction, QInputDialog, QLineEdit, QLabel, QPushButton, QTextEdit, QFormLayout
 from PyQt5.QtCore import QEvent, Qt
 import sys
@@ -24,7 +24,6 @@ from PyQt5 import QtGui
 from vassal import Terminal
 from threading import Thread
 import json
-import math
 import xml.etree.ElementTree as Xml
 
 from imutils.video import VideoStream
@@ -269,11 +268,15 @@ class ScanWindow(QMainWindow):
                                               QMessageBox.Yes)
             if dlg_result == QMessageBox.Yes:
                 if not self.save_scan():
+                    event.ignore()
                     return
             elif dlg_result == QMessageBox.Cancel:
                 event.ignore()
+                return
         self.main_window.show()
         time.sleep(0.01)
+        self.hide()
+        event.ignore()
         self.closed = True
 
     def services_menu_action_settings_click(self):
@@ -346,11 +349,9 @@ class ScanWindow(QMainWindow):
         #     dx = int(r * math.sin(alfa))
         #     dy = int(r * math.cos(alfa))
         #     self.coord_move([dx, dy, 0], mode='continuous')
-
-            # self.micros_controller.coord_move([self.micros_controller.coord[0] + dx,
-            #                                    self.micros_controller.coord[1] + dy,
-            #                                    self.micros_controller.coord[2]])
-
+        #     self.micros_controller.coord_move([self.micros_controller.coord[0] + dx,
+        #                                        self.micros_controller.coord[1] + dy,
+        #                                        self.micros_controller.coord[2]])
         # for d in range(1, 7):
         #     print(d)
         #     d_steps = int(2 ** d)
@@ -403,7 +404,7 @@ class ScanWindow(QMainWindow):
                         steps_count = self.check_object_inside(snap, previous_direction, [self.delta_x, self.delta_y])
                         # Проверяем - не ушли ли мы вовнутрь объекта
                         while steps_count > 0:
-                            # Проверяем - не вышли ли мы за пределы стола
+                            # # Проверяем - не вышли ли мы за пределы стола
                             # check_limit = True
                             # limit_break = False
                             # while check_limit:
@@ -441,17 +442,17 @@ class ScanWindow(QMainWindow):
                                                                 [self.delta_x, self.delta_y])
                         # Проверяем - не ушли ли мы наружу объекта
                         while steps_count > 0:
-                            # Проверяем - не вышли ли мы за пределы стола
+                            # # Проверяем - не вышли ли мы за пределы стола
                             # check_limit = True
                             # limit_break = False
                             # while check_limit:
                             #     check_limit = False
                             #     x += int(self.delta_x * steps_count
-                            #     * previous_opposite_direction[0] / self.pixels_in_mm)
+                            #              * previous_opposite_direction[0] / self.pixels_in_mm)
                             #     y -= int(self.delta_y * steps_count
-                            #     * previous_opposite_direction[1] / self.pixels_in_mm)
-                            #     if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
-                            #             self.table_controller.limits_mm[1]:
+                            #              * previous_opposite_direction[1] / self.pixels_in_mm)
+                            #     if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y \
+                            #             > self.table_controller.limits_mm[1]:
                             #         x = all_x[-1]
                             #         y = all_y[-1]
                             #         if steps_count > 1:
@@ -473,13 +474,10 @@ class ScanWindow(QMainWindow):
                                                                     previous_direction,
                                                                     [self.delta_x, self.delta_y])
 
-                    check_border_result = self.find_border_in_image(snap,
-                                                                    direction,
-                                                                    [self.delta_x, self.delta_y])
+                    steps_count = self.find_border_in_image(snap, direction, [self.delta_x, self.delta_y])
                     # Можно идти в направлении поиска границы еще
-                    if check_border_result.startswith('next'):
-                        steps_count = int(check_border_result[4])
-                        # Проверяем - не вышли ли мы за пределы стола
+                    if steps_count > 0:
+                        # # Проверяем - не вышли ли мы за пределы стола
                         # check_limit = True
                         # limit_break = False
                         # while check_limit:
@@ -490,13 +488,13 @@ class ScanWindow(QMainWindow):
                         #             self.table_controller.limits_mm[1]:
                         #         x = all_x[-1]
                         #         y = all_y[-1]
-                        #         if steps_count > 1:
-                        #             steps_count -= 1
-                        #             check_limit = True
-                        #         else:
-                        #             check_limit = False
-                        #             limit_break = True
-                        # if limit_break:
+                        #         steps_count -= 1
+                        #         if steps_count == 0:
+                        #             break
+                        #     else:
+                        #         break
+                        # if steps_count == 0:
+                        #     next_frame = False
                         #     break
                         x += int(self.delta_x * direction[0] * steps_count / self.pixels_in_mm)
                         y -= int(self.delta_y * direction[1] * steps_count / self.pixels_in_mm)
@@ -504,15 +502,17 @@ class ScanWindow(QMainWindow):
                         all_y.append(y)
                         snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
 
-                    print('x = ' + str(x) + '; y = ' + str(y))
-
-                    if check_border_result == 'stop':
+                        print('x = ' + str(x) + '; y = ' + str(y))
+                    else:
                         next_frame = False
                 previous_direction = direction
             self.edt_border_x1.setText(str(min(all_x)))
             self.edt_border_y1.setText(str(min(all_y)))
             self.edt_border_x2.setText(str(max(all_x)))
             self.edt_border_y2.setText(str(max(all_y)))
+        except Exception as e:
+            QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + e,
+                                 QMessageBox.Ok, QMessageBox.Ok)
         finally:
             self.control_elements_enabled(True)
             QMessageBox.information(self, "Info Dialog", "Границы определены", QMessageBox.Ok, QMessageBox.Ok)
@@ -529,7 +529,7 @@ class ScanWindow(QMainWindow):
                 x = middle + i * delta[0] * direction[0]
                 for y in range(img.shape[0]):
                     if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
-                        return 'next' + str(i)
+                        return i
         else:
             middle = int(img.shape[0] / 2)
             if direction[1] > 0:
@@ -538,9 +538,9 @@ class ScanWindow(QMainWindow):
                 y = middle + i * delta[1] * direction[1]
                 for x in range(img.shape[1]):
                     if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
-                        return 'next' + str(i)
+                        return i
 
-        return 'stop'
+        return 0
 
     @staticmethod
     # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала от объекта
@@ -773,11 +773,11 @@ class ScanWindow(QMainWindow):
         file_filter = "Microscope scans (*.misc)"
         a = QFileDialog.getSaveFileName(self, "Выберите место сохранения файла", "/",
                                         "All files (*.*);;Microscope scans (*.misc)", file_filter)
-
-        if len(a[0]) > 0:
-            ext = os.path.splitext(a[0])
+        file_name = a[0]
+        if len(file_name) > 0:
+            ext = os.path.splitext(file_name)
             if ext[1] == ".misc":
-                file_name = a[0]
+                file_name = file_name
             else:
                 file_name = ext[0] + ".misc"
             if os.path.exists(file_name):
@@ -796,8 +796,12 @@ class ScanWindow(QMainWindow):
             for file in files:
                 if file:
                     z.write(os.path.join(self.dir_for_img, file), file, compress_type=zipfile.ZIP_DEFLATED)
+        z.close()
         QMessageBox.information(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
         self.unsaved = False
+
+        self.main_window.open_file(file_name)
+        # HERE
         return True
 
     # Обработчики событий формы и ее компонентов
@@ -846,6 +850,8 @@ class ScanWindow(QMainWindow):
                     # someone_clicked = True
                 # if someone_clicked:
                 time.sleep(0.001)
+            else:
+                time.sleep(1)
 
 
 # Класс-помощник для отслеживания ручного управления установкой клавишами
@@ -987,7 +993,7 @@ class TableController:
         # self.steps_in_mm = 80
         # self.limits_step = (340 * self.steps_in_mm, 640 * self.steps_in_mm, 70 * self.steps_in_mm)
         # Режим тестирования - без работы с установкой
-        self.test: bool
+        self.test = False
         # self.micros_controller: MicrosController = None
         # self.programSettings: ProgramSettings = None
 
@@ -1121,8 +1127,8 @@ class TableController:
     def server_connect(self):
         pass
 
-    def init(self):
-        return self.send_json_request("init request")
+    # def init(self):
+    #     return self.send_json_request("init request")
 
     # # функция отправки json для управления станком
     # @staticmethod
@@ -1132,9 +1138,9 @@ class TableController:
 
 
 # Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    ex = ScanWindow()
-    sys.exit(app.exec_())
+# if __name__ == '__main__':
+#     app = QApplication(sys.argv)
+#     ex = ScanWindow()
+#     sys.exit(app.exec_())
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
