@@ -401,9 +401,15 @@ class ScanWindow(QMainWindow):
                     # При наличии предыдущего направления движения (все, кроме первого направления)
                     # проверяем, не смещается ли изделие поперек линии поиска
                     if previous_direction:
-                        steps_count = self.check_object_inside(snap, previous_direction, [self.delta_x, self.delta_y])
+                        # self.check_object_middle(snap, previous_direction, [self.delta_x, self.delta_y])
+                        # steps_count = self.check_object_inside(snap, previous_direction, [self.delta_x, self.delta_y])
                         # Проверяем - не ушли ли мы вовнутрь объекта
-                        while steps_count > 0:
+                        while True:
+                            steps_count = self.check_object_inside(snap,
+                                                                   previous_direction,
+                                                                   [self.delta_x, self.delta_y])
+                            if steps_count == 0:
+                                break
                             # # Проверяем - не вышли ли мы за пределы стола
                             # check_limit = True
                             # limit_break = False
@@ -423,6 +429,7 @@ class ScanWindow(QMainWindow):
                             #             limit_break = True
                             # if limit_break:
                             #     break
+
                             # Проверяем - не вышли ли мы за пределы стола
                             while True:
                                 x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
@@ -445,18 +452,20 @@ class ScanWindow(QMainWindow):
                             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
                             print('x = ' + str(x) + '; y = ' + str(y) + ' inside correction')
 
-                            steps_count = self.check_object_inside(snap,
-                                                                   previous_direction,
-                                                                   [self.delta_x, self.delta_y])
                         previous_opposite_direction = list()
                         previous_opposite_direction.append(-previous_direction[0])
                         previous_opposite_direction.append(-previous_direction[1])
 
-                        steps_count = self.check_object_outside(snap,
-                                                                previous_opposite_direction,
-                                                                [self.delta_x, self.delta_y])
+                        # steps_count = self.check_object_outside(snap,
+                        #                                         previous_opposite_direction,
+                        #                                         [self.delta_x, self.delta_y])
                         # Проверяем - не ушли ли мы наружу объекта
-                        while steps_count > 0:
+                        while True:
+                            steps_count = self.check_object_outside(snap,
+                                                                    previous_direction,
+                                                                    [self.delta_x, self.delta_y])
+                            if steps_count == 0:
+                                break
                             # # Проверяем - не вышли ли мы за пределы стола
                             # check_limit = True
                             # limit_break = False
@@ -478,6 +487,7 @@ class ScanWindow(QMainWindow):
                             #             limit_break = True
                             # if limit_break:
                             #     break
+
                             while True:
                                 x += int(self.delta_x * steps_count * previous_opposite_direction[0] / self.pixels_in_mm)
                                 y -= int(self.delta_y * steps_count * previous_opposite_direction[1] / self.pixels_in_mm)
@@ -499,14 +509,11 @@ class ScanWindow(QMainWindow):
                             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
 
                             print('x = ' + str(x) + '; y = ' + str(y) + ' outside correction')
-                            steps_count = self.check_object_outside(snap,
-                                                                    previous_direction,
-                                                                    [self.delta_x, self.delta_y])
 
                     steps_count = self.find_border_in_image(snap, direction, [self.delta_x, self.delta_y])
                     # Можно идти в направлении поиска границы еще
                     if steps_count > 0:
-                        # Проверяем - не вышли ли мы за пределы стола
+                        # Проверяем -`   не вышли ли мы за пределы стола
                         while True:
                             x += int(self.delta_x * direction[0] * steps_count / self.pixels_in_mm)
                             y -= int(self.delta_y * direction[1] * steps_count / self.pixels_in_mm)
@@ -564,96 +571,161 @@ class ScanWindow(QMainWindow):
                 for x in range(img.shape[1]):
                     if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
                         return i
-
         return 0
 
     @staticmethod
-    # Комбинированный метод, следящий за тем, чтобы камера фокусировалась на середине объекта
     # HERE
+    # Комбинированный метод, следящий за тем, чтобы граница объекта при поиске находилась в середине изображения
     def check_object_middle(img, direction, delta):
+        # direction_sequence = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 0], [0, 1]]
+        # Допустимая доля не белых пикселей для белой линии
+        limit_not_white = int(0.02 * img.shape[0])
         if direction[0] != 0:
             middle = int(img.shape[1] / 2)
-            for i in range(11):
+            # for i in range(11):
+            for i in range(10, -1, -1):
+                # Проверяем - является ли линия белой
                 white_line = True
-                limit_not_white = int(img.shape[0] / 50)
+                not_white_pixels_count = 0
                 x = i * delta[0]
                 for y in range(img.shape[0]):
                     if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
-                        limit_not_white -= 1
-                        if limit_not_white <= 0:
+                        not_white_pixels_count += 1
+                        if not_white_pixels_count > limit_not_white:
                             white_line = False
                             break
-                if white:
-                    return i
+                # if white:
+                #     return i
+
+    # @staticmethod
+    # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала от объекта
+    # Возвращает - сколько надо сделать шагов "внутрь"
+    # def check_object_outside(img, direction, delta):
+    #     if direction[0] != 0:
+    #         middle = int(img.shape[1] / 2)
+    #         if direction[0] < 0:
+    #             middle -= 1
+    #         # Ищем хоть 1 пиксель объекта
+    #         for i in range(5, 0, -1):
+    #             white = True
+    #             x = middle - i * delta[0] * direction[0]
+    #             for y in range(img.shape[0]):
+    #                 # if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
+    #                 #     white = False
+    #                 #     break
+    #                 for k in range(3):
+    #                     if img[y][x][k] < 128:
+    #                         white = False
+    #                 if not white:
+    #                     break
+    #             if white:
+    #                 return i
+    #     else:
+    #         middle = int(img.shape[0] / 2)
+    #         if direction[1] < 0:
+    #             middle -= 1
+    #         # Ищем хоть 1 пиксель объекта
+    #         for i in range(5, 0, -1):
+    #             white = True
+    #             y = middle - i * delta[1] * direction[1]
+    #             for x in range(img.shape[1]):
+    #                 # if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
+    #                 #     white = False
+    #                 #     break
+    #                 for k in range(3):
+    #                     if img[y][x][k] < 128:
+    #                         white = False
+    #                 if not white:
+    #                     break
+    #             if white:
+    #                 return i
+    #
+    #     return 0
 
     @staticmethod
     # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала от объекта
     # Возвращает - сколько надо сделать шагов "внутрь"
     def check_object_outside(img, direction, delta):
-        if direction[0] != 0:
-            middle = int(img.shape[1] / 2)
-            if direction[0] > 0:
-                middle -= 1
-            # Ищем хоть 1 пиксель объекта
-            for i in range(5, 0, -1):
-                white = True
-                x = middle + i * delta[0] * direction[0]
-                for y in range(img.shape[0]):
-                    if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
-                        white = False
-                        break
-                if white:
-                    return i
-        else:
-            white = True
-            middle = int(img.shape[0] / 2)
-            if direction[1] > 0:
-                middle -= 1
-            # Ищем хоть 1 пиксель объекта
-            for i in range(5, 0, -1):
-                y = middle + i * delta[1] * direction[1]
-                for x in range(img.shape[1]):
-                    if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
-                        white = False
-                        break
-                if white:
-                    return i
+        index = abs(direction[1])
 
+        middle = int(img.shape[1 - index] / 2)
+        if direction[index] < 0:
+            middle -= 1
+        # Ищем хоть 1 пиксель объекта
+        coord = [0, 0]
+        for i in range(5, 0, -1):
+            white = True
+            coord[index] = middle - i * delta[index] * direction[index]
+            for j in range(img.shape[index]):
+                coord[1 - index] = j
+                for k in range(3):
+                    if img[coord[1]][coord[0]][k] < 128:
+                        white = False
+                if not white:
+                    break
+
+            if white:
+                return i
         return 0
 
     @staticmethod
     # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала внутрь объекта
     # Возвращает - сколько надо сделать шагов "наружу"
     def check_object_inside(img, direction, delta):
-        if direction[0] != 0:
-            middle = int(img.shape[1] / 2)
-            if direction[0] > 0:
-                middle -= 1
-            # Ищем хоть одну "белую" линию "снаружи". Если она есть - значит все нормально
-            for i in range(5, 0, -1):
-                white = True
-                x = middle + i * delta[0] * direction[0]
-                for y in range(img.shape[0]):
-                    if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
+        index = abs(direction[1])
+
+        middle = int(img.shape[1 - index] / 2)
+        if direction[index] > 0:
+            middle -= 1
+        # Ищем хоть одну "белую" линию "снаружи". Если она есть - значит все нормально
+        coord = [0, 0]
+        for i in range(5, 0, -1):
+            white = True
+            coord[index] = middle + i * delta[index] * direction[index]
+            for j in range(img.shape[0]):
+                coord[1 - index] = j
+                for k in range(3):
+                    if img[coord[1]][coord[0]][k] < 128:
                         white = False
-                        break
                 if not white:
-                    return i
-        else:
-            middle = int(img.shape[0] / 2)
-            if direction[1] > 0:
-                middle -= 1
-            # Ищем хоть одну "белую" линию "снаружи". Если она есть - значит все нормально
-            for i in range(5, 0, -1):
-                white = True
-                y = middle + i * delta[1] * direction[1]
-                for x in range(img.shape[1]):
-                    if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
-                        white = False
-                        break
-                if not white:
-                    return i
+                    break
+            if not white:
+                return i
         return 0
+
+    # @staticmethod
+    # # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала внутрь объекта
+    # # Возвращает - сколько надо сделать шагов "наружу"
+    # def check_object_inside(img, direction, delta):
+    #     if direction[0] != 0:
+    #         middle = int(img.shape[1] / 2)
+    #         if direction[0] > 0:
+    #             middle -= 1
+    #         # Ищем хоть одну "белую" линию "снаружи". Если она есть - значит все нормально
+    #         for i in range(5, 0, -1):
+    #             white = True
+    #             x = middle + i * delta[0] * direction[0]
+    #             for y in range(img.shape[0]):
+    #                 if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
+    #                     white = False
+    #                     break
+    #             if not white:
+    #                 return i
+    #     else:
+    #         middle = int(img.shape[0] / 2)
+    #         if direction[1] > 0:
+    #             middle -= 1
+    #         # Ищем хоть одну "белую" линию "снаружи". Если она есть - значит все нормально
+    #         for i in range(5, 0, -1):
+    #             white = True
+    #             y = middle + i * delta[1] * direction[1]
+    #             for x in range(img.shape[1]):
+    #                 if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
+    #                     white = False
+    #                     break
+    #             if not white:
+    #                 return i
+    #     return 0
 
     def scan(self):
         if self.unsaved:
@@ -938,7 +1010,9 @@ class KeyboardButton:
 # Класс управления микроскопом (пока тестовая подделка)
 class MicrosController:
     def __init__(self, test: bool):
-        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_6.jpg"
+        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
+        # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
+        # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
         self.test_img = cv2.imread(self.test_img_path)[:, :, ::-1]
         self.test = test
         self.frame = list()
@@ -997,7 +1071,7 @@ class MicrosController:
 
     def snap(self, x1: int, y1: int, x2: int, y2: int, crop=False):
         if self.test:
-            time.sleep(0.5)
+            time.sleep(0.25)
             # return np.copy(self.test_img[y1:y2, x1:x2, :])
             # Переворачиваем координаты съемки
             y2_r = 6400 - y1
