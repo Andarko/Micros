@@ -549,29 +549,65 @@ class ScanWindow(QMainWindow):
             self.control_elements_enabled(True)
             QMessageBox.information(self, "Info Dialog", "Границы определены", QMessageBox.Ok, QMessageBox.Ok)
 
+    def exp_border_find(self):
+        pass
+
+    # Вспомогательная функция для определения - достигла ли камера границы при поиске в заданном направлении
+    @staticmethod
+    def exp_find_border_in_image(img, direction, delta):
+        index = abs(direction[1])
+        # Проверяем - не стало ли по направлению движения "чисто" (все линии)
+        middle = int(img.shape[1 - index] / 2)
+        if direction[index] > 0:
+            middle -= 1
+        coord = [0, 0]
+        for i in range(5, -5, -1):
+            coord[index] = middle + i * delta[index] * direction[index]
+            for j in range(img.shape[index]):
+                coord[1 - index] = j
+                for k in range(3):
+                    if img[coord[1]][coord[0]][k] < 128:
+                        return i
+        return 0
+
     # Вспомогательная функция для определения - достигла ли камера границы при поиске в заданном направлении
     @staticmethod
     def find_border_in_image(img, direction, delta):
+        index = abs(direction[1])
         # Проверяем - не стало ли по направлению движения "чисто" (все линии)
-        if direction[0] != 0:
-            middle = int(img.shape[1] / 2)
-            if direction[0] > 0:
-                middle -= 1
-            for i in range(5, 0, -1):
-                x = middle + i * delta[0] * direction[0]
-                for y in range(img.shape[0]):
-                    if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
-                        return i
-        else:
-            middle = int(img.shape[0] / 2)
-            if direction[1] > 0:
-                middle -= 1
-            for i in range(5, 0, -1):
-                y = middle + i * delta[1] * direction[1]
-                for x in range(img.shape[1]):
-                    if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
+        middle = int(img.shape[1 - index] / 2)
+        if direction[index] > 0:
+            middle -= 1
+        coord = [0, 0]
+        for i in range(5, 0, -1):
+            coord[index] = middle + i * delta[index] * direction[index]
+            for j in range(img.shape[index]):
+                coord[1 - index] = j
+                for k in range(3):
+                    if img[coord[1]][coord[0]][k] < 128:
                         return i
         return 0
+
+        # # Проверяем - не стало ли по направлению движения "чисто" (все линии)
+        # if direction[0] != 0:
+        #     middle = int(img.shape[1] / 2)
+        #     if direction[0] > 0:
+        #         middle -= 1
+        #     for i in range(5, 0, -1):
+        #         x = middle + i * delta[0] * direction[0]
+        #         for y in range(img.shape[0]):
+        #             if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
+        #                 return i
+        # else:
+        #     middle = int(img.shape[0] / 2)
+        #     if direction[1] > 0:
+        #         middle -= 1
+        #     for i in range(5, 0, -1):
+        #         y = middle + i * delta[1] * direction[1]
+        #         for x in range(img.shape[1]):
+        #             if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
+        #                 return i
+        # return 0
 
     @staticmethod
     # HERE
@@ -649,13 +685,14 @@ class ScanWindow(QMainWindow):
         index = abs(direction[1])
 
         middle = int(img.shape[1 - index] / 2)
-        if direction[index] < 0:
+        if direction[index] > 0:
             middle -= 1
         # Ищем хоть 1 пиксель объекта
         coord = [0, 0]
-        for i in range(5, 0, -1):
+        # for i in range(0, 6):
+        for i in range(0, -6, -1):
             white = True
-            coord[index] = middle - i * delta[index] * direction[index]
+            coord[index] = middle + i * delta[index] * direction[index]
             for j in range(img.shape[index]):
                 coord[1 - index] = j
                 for k in range(3):
@@ -663,10 +700,9 @@ class ScanWindow(QMainWindow):
                         white = False
                 if not white:
                     break
-
-            if white:
-                return i
-        return 0
+            if not white:
+                return -i
+        return 5
 
     @staticmethod
     # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала внутрь объекта
@@ -682,7 +718,7 @@ class ScanWindow(QMainWindow):
         for i in range(5, 0, -1):
             white = True
             coord[index] = middle + i * delta[index] * direction[index]
-            for j in range(img.shape[0]):
+            for j in range(img.shape[index]):
                 coord[1 - index] = j
                 for k in range(3):
                     if img[coord[1]][coord[0]][k] < 128:
@@ -1010,7 +1046,7 @@ class KeyboardButton:
 # Класс управления микроскопом (пока тестовая подделка)
 class MicrosController:
     def __init__(self, test: bool):
-        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
+        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_6.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
         self.test_img = cv2.imread(self.test_img_path)[:, :, ::-1]
@@ -1071,7 +1107,7 @@ class MicrosController:
 
     def snap(self, x1: int, y1: int, x2: int, y2: int, crop=False):
         if self.test:
-            time.sleep(0.25)
+            time.sleep(0.4)
             # return np.copy(self.test_img[y1:y2, x1:x2, :])
             # Переворачиваем координаты съемки
             y2_r = 6400 - y1
