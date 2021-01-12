@@ -10,11 +10,10 @@ import os
 import websockets
 
 from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QSizePolicy, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import QWidget, QMainWindow, QSizePolicy, QFileDialog, QMessageBox
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
 from PyQt5.QtWidgets import QAction, QInputDialog, QLineEdit, QLabel, QPushButton, QTextEdit, QFormLayout
 from PyQt5.QtCore import QEvent, Qt
-import sys
 import numpy as np
 import cv2
 import datetime
@@ -383,161 +382,9 @@ class ScanWindow(QMainWindow):
             all_x.append(x)
             all_y.append(y)
 
-            # snap = self.micros_controller.snap(self.pixels_in_mm * (x - self.snap_width_half),
-            #                                    self.pixels_in_mm * (y - self.snap_height_half),
-            #                                    self.pixels_in_mm * (x + self.snap_width_half),
-            #                                    self.pixels_in_mm * (y + self.snap_height_half))
-            #
-            # self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(snap))
-            # self.lbl_img.repaint()
             # Направления для поиска краев
             direction_sequence = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 0], [0, 1]]
             previous_direction = None
-
-            # for direction in direction_sequence:
-            #     # Берем следующий фрейм до тех пор, пока не выйдем за границу изделтя
-            #     print("direction=" + str(direction))
-            #     while True:
-            #         # При наличии предыдущего направления движения (все, кроме первого направления)
-            #         # проверяем, не смещается ли изделие поперек линии поиска
-            #         if previous_direction:
-            #             # self.check_object_middle(snap, previous_direction, [self.delta_x, self.delta_y])
-            #             # steps_count = self.check_object_inside(snap, previous_direction, [self.delta_x, self.delta_y])
-            #             # Проверяем - не ушли ли мы вовнутрь объекта
-            #             while True:
-            #                 steps_count = self.check_object_inside(snap,
-            #                                                        previous_direction,
-            #                                                        [self.delta_x, self.delta_y])
-            #                 if steps_count == 0:
-            #                     break
-            #                 # # Проверяем - не вышли ли мы за пределы стола
-            #                 # check_limit = True
-            #                 # limit_break = False
-            #                 # while check_limit:
-            #                 #     check_limit = False
-            #                 #     x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
-            #                 #     y -= int(self.delta_y * steps_count * previous_direction[1] / self.pixels_in_mm)
-            #                 #     if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] \
-            #                 #             or y > self.table_controller.limits_mm[1]:
-            #                 #         x = all_x[-1]
-            #                 #         y = all_y[-1]
-            #                 #         if steps_count > 1:
-            #                 #             steps_count -= 1
-            #                 #             check_limit = True
-            #                 #         else:
-            #                 #             check_limit = False
-            #                 #             limit_break = True
-            #                 # if limit_break:
-            #                 #     break
-            #
-            #                 # Проверяем - не вышли ли мы за пределы стола
-            #                 while True:
-            #                     x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
-            #                     y -= int(self.delta_y * steps_count * previous_direction[1] / self.pixels_in_mm)
-            #                     if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
-            #                             self.table_controller.limits_mm[1]:
-            #                         x = all_x[-1]
-            #                         y = all_y[-1]
-            #                         steps_count -= 1
-            #                         if steps_count == 0:
-            #                             break
-            #                     else:
-            #                         break
-            #                 if steps_count == 0:
-            #                     break
-            #                 # x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
-            #                 # y -= int(self.delta_y * steps_count * previous_direction[1] / self.pixels_in_mm)
-            #                 all_x.append(x)
-            #                 all_y.append(y)
-            #                 snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
-            #                 print('x = ' + str(x) + '; y = ' + str(y) + ' inside correction')
-            #
-            #             previous_opposite_direction = list()
-            #             previous_opposite_direction.append(-previous_direction[0])
-            #             previous_opposite_direction.append(-previous_direction[1])
-            #
-            #             # steps_count = self.check_object_outside(snap,
-            #             #                                         previous_opposite_direction,
-            #             #                                         [self.delta_x, self.delta_y])
-            #             # Проверяем - не ушли ли мы наружу объекта
-            #             while True:
-            #                 steps_count = self.check_object_outside(snap,
-            #                                                         previous_direction,
-            #                                                         [self.delta_x, self.delta_y])
-            #                 if steps_count == 0:
-            #                     break
-            #                 # # Проверяем - не вышли ли мы за пределы стола
-            #                 # check_limit = True
-            #                 # limit_break = False
-            #                 # while check_limit:
-            #                 #     check_limit = False
-            #                 #     x += int(self.delta_x * steps_count
-            #                 #              * previous_opposite_direction[0] / self.pixels_in_mm)
-            #                 #     y -= int(self.delta_y * steps_count
-            #                 #              * previous_opposite_direction[1] / self.pixels_in_mm)
-            #                 #     if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y \
-            #                 #             > self.table_controller.limits_mm[1]:
-            #                 #         x = all_x[-1]
-            #                 #         y = all_y[-1]
-            #                 #         if steps_count > 1:
-            #                 #             steps_count -= 1
-            #                 #             check_limit = True
-            #                 #         else:
-            #                 #             check_limit = False
-            #                 #             limit_break = True
-            #                 # if limit_break:
-            #                 #     break
-            #
-            #                 while True:
-            #                     x += int(self.delta_x * steps_count * previous_opposite_direction[0] / self.pixels_in_mm)
-            #                     y -= int(self.delta_y * steps_count * previous_opposite_direction[1] / self.pixels_in_mm)
-            #                     if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
-            #                             self.table_controller.limits_mm[1]:
-            #                         x = all_x[-1]
-            #                         y = all_y[-1]
-            #                         steps_count -= 1
-            #                         if steps_count == 0:
-            #                             break
-            #                     else:
-            #                         break
-            #                 if steps_count == 0:
-            #                     break
-            #                 # x += int(self.delta_x * steps_count * previous_opposite_direction[0] / self.pixels_in_mm)
-            #                 # y -= int(self.delta_y * steps_count * previous_opposite_direction[1] / self.pixels_in_mm)
-            #                 all_x.append(x)
-            #                 all_y.append(y)
-            #                 snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
-            #
-            #                 print('x = ' + str(x) + '; y = ' + str(y) + ' outside correction')
-            #
-            #         steps_count = self.find_border_in_image(snap, direction, [self.delta_x, self.delta_y])
-            #         # Можно идти в направлении поиска границы еще
-            #         if steps_count > 0:
-            #             # Проверяем -`   не вышли ли мы за пределы стола
-            #             while True:
-            #                 x += int(self.delta_x * direction[0] * steps_count / self.pixels_in_mm)
-            #                 y -= int(self.delta_y * direction[1] * steps_count / self.pixels_in_mm)
-            #                 if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
-            #                         self.table_controller.limits_mm[1]:
-            #                     x = all_x[-1]
-            #                     y = all_y[-1]
-            #                     steps_count -= 1
-            #                     if steps_count == 0:
-            #                         break
-            #                 else:
-            #                     break
-            #             if steps_count == 0:
-            #                 break
-            #             # x += int(self.delta_x * direction[0] * steps_count / self.pixels_in_mm)
-            #             # y -= int(self.delta_y * direction[1] * steps_count / self.pixels_in_mm)
-            #             all_x.append(x)
-            #             all_y.append(y)
-            #             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
-            #
-            #             print('x = ' + str(x) + '; y = ' + str(y))
-            #         else:
-            #             break
-            #     previous_direction = direction
 
             for direction in direction_sequence:
                 # Берем следующий фрейм до тех пор, пока не выйдем за границу изделтя
@@ -546,8 +393,6 @@ class ScanWindow(QMainWindow):
                     # При наличии предыдущего направления движения (все, кроме первого направления)
                     # проверяем, не смещается ли изделие поперек линии поиска
                     if previous_direction:
-                        # self.check_object_middle(snap, previous_direction, [self.delta_x, self.delta_y])
-                        # steps_count = self.check_object_inside(snap, previous_direction, [self.delta_x, self.delta_y])
                         # Проверяем - не ушли ли мы вовнутрь объекта
                         while True:
                             steps_count = self.check_object_middle(snap,
@@ -555,26 +400,6 @@ class ScanWindow(QMainWindow):
                                                                    [self.delta_x, self.delta_y])
                             if steps_count == 0:
                                 break
-                            # # Проверяем - не вышли ли мы за пределы стола
-                            # check_limit = True
-                            # limit_break = False
-                            # while check_limit:
-                            #     check_limit = False
-                            #     x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
-                            #     y -= int(self.delta_y * steps_count * previous_direction[1] / self.pixels_in_mm)
-                            #     if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] \
-                            #             or y > self.table_controller.limits_mm[1]:
-                            #         x = all_x[-1]
-                            #         y = all_y[-1]
-                            #         if steps_count > 1:
-                            #             steps_count -= 1
-                            #             check_limit = True
-                            #         else:
-                            #             check_limit = False
-                            #             limit_break = True
-                            # if limit_break:
-                            #     break
-
                             # Проверяем - не вышли ли мы за пределы стола
                             while True:
                                 x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
@@ -634,7 +459,7 @@ class ScanWindow(QMainWindow):
             self.edt_border_x2.setText(str(max(all_x)))
             self.edt_border_y2.setText(str(max(all_y)))
         except Exception as e:
-            QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + e,
+            QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + str(e),
                                  QMessageBox.Ok, QMessageBox.Ok)
         finally:
             self.control_elements_enabled(True)
@@ -679,27 +504,6 @@ class ScanWindow(QMainWindow):
                         return i
         return 0
 
-        # # Проверяем - не стало ли по направлению движения "чисто" (все линии)
-        # if direction[0] != 0:
-        #     middle = int(img.shape[1] / 2)
-        #     if direction[0] > 0:
-        #         middle -= 1
-        #     for i in range(5, 0, -1):
-        #         x = middle + i * delta[0] * direction[0]
-        #         for y in range(img.shape[0]):
-        #             if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
-        #                 return i
-        # else:
-        #     middle = int(img.shape[0] / 2)
-        #     if direction[1] > 0:
-        #         middle -= 1
-        #     for i in range(5, 0, -1):
-        #         y = middle + i * delta[1] * direction[1]
-        #         for x in range(img.shape[1]):
-        #             if img[y][x][0] < 128 or img[y][x][1] < 128 or img[y][x][2] < 128:
-        #                 return i
-        # return 0
-
     @staticmethod
     # HERE
     # Комбинированный метод, следящий за тем, чтобы граница объекта при поиске находилась в середине изображения
@@ -727,56 +531,56 @@ class ScanWindow(QMainWindow):
                 return i
         return -5
 
-    @staticmethod
-    # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала от объекта
-    # Возвращает - сколько надо сделать шагов "внутрь"
-    def check_object_outside(img, direction, delta):
-        index = abs(direction[1])
-
-        middle = int(img.shape[1 - index] / 2)
-        if direction[index] > 0:
-            middle -= 1
-        # Ищем хоть 1 пиксель объекта
-        coord = [0, 0]
-        # for i in range(0, 6):
-        for i in range(0, -6, -1):
-            white = True
-            coord[index] = middle + i * delta[index] * direction[index]
-            for j in range(img.shape[index]):
-                coord[1 - index] = j
-                for k in range(3):
-                    if img[coord[1]][coord[0]][k] < 128:
-                        white = False
-                if not white:
-                    break
-            if not white:
-                return -i
-        return 5
-
-    @staticmethod
-    # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала внутрь объекта
-    # Возвращает - сколько надо сделать шагов "наружу"
-    def check_object_inside(img, direction, delta):
-        index = abs(direction[1])
-
-        middle = int(img.shape[1 - index] / 2)
-        if direction[index] > 0:
-            middle -= 1
-        # Ищем хоть одну "белую" линию "снаружи". Если она есть - значит все нормально
-        coord = [0, 0]
-        for i in range(5, 0, -1):
-            white = True
-            coord[index] = middle + i * delta[index] * direction[index]
-            for j in range(img.shape[index]):
-                coord[1 - index] = j
-                for k in range(3):
-                    if img[coord[1]][coord[0]][k] < 128:
-                        white = False
-                if not white:
-                    break
-            if not white:
-                return i
-        return 0
+    # @staticmethod
+    # # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала от объекта
+    # # Возвращает - сколько надо сделать шагов "внутрь"
+    # def check_object_outside(img, direction, delta):
+    #     index = abs(direction[1])
+    #
+    #     middle = int(img.shape[1 - index] / 2)
+    #     if direction[index] > 0:
+    #         middle -= 1
+    #     # Ищем хоть 1 пиксель объекта
+    #     coord = [0, 0]
+    #     # for i in range(0, 6):
+    #     for i in range(0, -6, -1):
+    #         white = True
+    #         coord[index] = middle + i * delta[index] * direction[index]
+    #         for j in range(img.shape[index]):
+    #             coord[1 - index] = j
+    #             for k in range(3):
+    #                 if img[coord[1]][coord[0]][k] < 128:
+    #                     white = False
+    #             if not white:
+    #                 break
+    #         if not white:
+    #             return -i
+    #     return 5
+    #
+    # @staticmethod
+    # # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала внутрь объекта
+    # # Возвращает - сколько надо сделать шагов "наружу"
+    # def check_object_inside(img, direction, delta):
+    #     index = abs(direction[1])
+    #
+    #     middle = int(img.shape[1 - index] / 2)
+    #     if direction[index] > 0:
+    #         middle -= 1
+    #     # Ищем хоть одну "белую" линию "снаружи". Если она есть - значит все нормально
+    #     coord = [0, 0]
+    #     for i in range(5, 0, -1):
+    #         white = True
+    #         coord[index] = middle + i * delta[index] * direction[index]
+    #         for j in range(img.shape[index]):
+    #             coord[1 - index] = j
+    #             for k in range(3):
+    #                 if img[coord[1]][coord[0]][k] < 128:
+    #                     white = False
+    #             if not white:
+    #                 break
+    #         if not white:
+    #             return i
+    #     return 0
 
     def scan(self):
         if self.unsaved:
@@ -855,49 +659,6 @@ class ScanWindow(QMainWindow):
                 print('x = ' + str(x) + '; y = ' + str(y))
 
             left_dir = not left_dir
-
-        # выбираем обход изображения, исходя из того - ближе мы к его верху или низу
-        # y_start = y1
-        # y_finish = y2 + 1
-        # y_delta = self.snap_height
-        # j = int((y2 - y1) / self.snap_height) + 1
-        # d_j = -1
-        # if abs(self.table_controller.coord_mm[1] - y1) > abs(self.table_controller.coord_mm[1] - y2):
-        #     y_start = y2
-        #     y_finish = y1 - 1
-        #     y_delta = -self.snap_height
-        #     j = 1
-        #     d_j = 1
-
-        # for y in range(y_start, y_finish, y_delta):
-        #     if left_dir:
-        #         i = int((x2 - x1) / self.snap_width) + 1
-        #         for x in range(x2, x1 - 1, -self.snap_width):
-        #             snap = self.coord_move([x, y, self.snap_height], mode="discrete")
-        #             # snap = self.micros_controller.snap(self.pixels_in_mm * (x - self.snap_width_half),
-        #             #                                    self.pixels_in_mm * (y - self.snap_height_half),
-        #             #                                    self.pixels_in_mm * (x + self.snap_width_half),
-        #             #                                    self.pixels_in_mm * (y + self.snap_height_half))
-        #             # self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(snap))
-        #             # self.lbl_img.repaint()
-        #             cv2.imwrite(os.path.join(self.dir_for_img, "S_{0}_{1}.jpg".format(j, i)), snap[:, :, ::-1])
-        #             print('x = ' + str(x) + '; y = ' + str(y))
-        #             i -= 1
-        #     else:
-        #         i = 0
-        #         for x in range(x1, x2 + 1, self.snap_width):
-        #             i += 1
-        #             snap = self.coord_move([x, y, self.snap_height], mode="discrete")
-        #             # snap = self.micros_controller.snap(self.pixels_in_mm * (x - self.snap_width_half),
-        #             #                                    self.pixels_in_mm * (y - self.snap_height_half),
-        #             #                                    self.pixels_in_mm * (x + self.snap_width_half),
-        #             #                                    self.pixels_in_mm * (y + self.snap_height_half))
-        #             # self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(snap))
-        #             # self.lbl_img.repaint()
-        #             cv2.imwrite(os.path.join(self.dir_for_img, "S_{0}_{1}.jpg".format(j, i)), snap[:, :, ::-1])
-        #             print('x = ' + str(x) + '; y = ' + str(y))
-        #     left_dir = not left_dir
-        #     j += d_j
 
         # Создание файла описания XML
         root = Xml.Element("Root")
@@ -1020,6 +781,31 @@ class ScanWindow(QMainWindow):
                 time.sleep(1)
 
 
+# Класс направления - умеет выдавать следующее и предыдущее направление
+class Direction:
+    def __init__(self, index=0, direction=[1, 0]):
+        # self.__direction_sequence = [[1, 0], [0, 1], [-1, 0], [0, -1]]
+        # self.__index = index % 4
+        self.__abs_index = index
+        self.__direction = direction
+
+    def __getitem__(self, key):
+        return self.__direction[key]
+
+    def __repr__(self):
+        return str(self.__abs_index) + str(self.__direction)
+
+    @property
+    def abs_index(self):
+        return self.__abs_index
+
+    def previous(self):
+        return Direction(self.__abs_index - 1, [self.__direction[1], -self.__direction[0]])
+
+    def next(self):
+        return Direction(self.__abs_index + 1, [-self.__direction[1], self.__direction[0]])
+
+
 # Класс-помощник для отслеживания ручного управления установкой клавишами
 class KeyboardButton:
     def __init__(self):
@@ -1061,7 +847,7 @@ class KeyboardButton:
 # Класс управления микроскопом (пока тестовая подделка)
 class MicrosController:
     def __init__(self, test: bool):
-        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_6.jpg"
+        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_4.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
         self.test_img = cv2.imread(self.test_img_path)[:, :, ::-1]
@@ -1149,7 +935,7 @@ class TableController:
         # Текущий статус станка: работает или нет
         self.operation_status = ''
         self.coord_step = [-1, -1, -1]
-        self.coord_mm = [-1, -1, -1]
+        self.coord_mm = [-1.0, -1.0, -1.0]
         self.manual_mode = True
         self.manual_left_count = 0
         self.manual_right_count = 0
@@ -1254,9 +1040,9 @@ class TableController:
                 self.coord_mm[0] = coord[0]
                 self.coord_mm[1] = coord[1]
                 self.coord_mm[2] = coord[2]
-                self.coord_step[0] = self.coord_mm[0] * self.steps_in_mm
-                self.coord_step[1] = self.coord_mm[1] * self.steps_in_mm
-                self.coord_step[2] = self.coord_mm[2] * self.steps_in_mm
+                self.coord_step[0] = int(self.coord_mm[0] * self.steps_in_mm)
+                self.coord_step[1] = int(self.coord_mm[1] * self.steps_in_mm)
+                self.coord_step[2] = int(self.coord_mm[2] * self.steps_in_mm)
             else:
                 # if mode == "continuous"
                 coord[0] = -coord[0]
