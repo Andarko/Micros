@@ -383,18 +383,21 @@ class ScanWindow(QMainWindow):
             all_y.append(y)
 
             # Направления для поиска краев
-            direction_sequence = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 0], [0, 1]]
-            previous_direction = None
-
-            for direction in direction_sequence:
+            # direction_sequence = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 0], [0, 1]]
+            # previous_direction = None
+            direction = Direction()
+            while direction.abs_index < 6:
+            # for direction in direction_sequence:
                 # Берем следующий фрейм до тех пор, пока не выйдем за границу изделтя
                 print("direction=" + str(direction))
                 while True:
                     # При наличии предыдущего направления движения (все, кроме первого направления)
                     # проверяем, не смещается ли изделие поперек линии поиска
-                    if previous_direction:
+                    # if previous_direction:
+                    if direction.abs_index > 0:
                         # Проверяем - не ушли ли мы вовнутрь объекта
                         while True:
+                            previous_direction = direction.previous()
                             steps_count = self.check_object_middle(snap,
                                                                    previous_direction,
                                                                    [self.delta_x, self.delta_y])
@@ -452,7 +455,8 @@ class ScanWindow(QMainWindow):
                         print('x = ' + str(x) + '; y = ' + str(y))
                     else:
                         break
-                previous_direction = direction
+                # previous_direction = direction
+                direction = direction.next()
 
             self.edt_border_x1.setText(str(min(all_x)))
             self.edt_border_y1.setText(str(min(all_y)))
@@ -495,13 +499,13 @@ class ScanWindow(QMainWindow):
         if direction[index] > 0:
             middle -= 1
         coord = [0, 0]
-        for i in range(5, 0, -1):
+        for i in range(5, -4, -1):
             coord[index] = middle + i * delta[index] * direction[index]
             for j in range(img.shape[index]):
                 coord[1 - index] = j
                 for k in range(3):
                     if img[coord[1]][coord[0]][k] < 128:
-                        return i
+                        return i + 3
         return 0
 
     @staticmethod
@@ -847,7 +851,7 @@ class KeyboardButton:
 # Класс управления микроскопом (пока тестовая подделка)
 class MicrosController:
     def __init__(self, test: bool):
-        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_4.jpg"
+        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_6.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
         self.test_img = cv2.imread(self.test_img_path)[:, :, ::-1]
