@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QDialog, QComboBox, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QInputDialog, \
-    QLineEdit, QMessageBox, QFormLayout, QDoubleSpinBox, QSpinBox, QAbstractSpinBox
+    QLineEdit, QMessageBox, QFormLayout, QDoubleSpinBox, QSpinBox, QAbstractSpinBox, QDialogButtonBox
 from PyQt5.QtCore import Qt, QSize, QRect
 import xml.etree.ElementTree as Xml
 
@@ -48,7 +48,7 @@ class ProgramSettings(object):
         self.snap_settings = SnapSettings()
         self.table_settings = TableSettings()
         if not test:
-            self.load_current_from_xml("settings.xml")
+            self.load_current_from_xml("scan_settings.xml")
         # self.pixels_in_mm = 10.0
         # self.snap_width = 20.0
         # self.snap_height = 10.0
@@ -130,6 +130,9 @@ class SettingsDialog(QDialog):
         self.edt_work_height = QDoubleSpinBox()
         self.edt_focus = QLineEdit()
         self.edt_zoom_ratio = QLineEdit()
+        # self.btn_ok = QPushButton("OK")
+        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+
         self.init_ui()
 
     # Создание элементов формы
@@ -231,9 +234,17 @@ class SettingsDialog(QDialog):
 
         layout_main.addLayout(layout_offset)
 
-        layout_main.addWidget(QPushButton("ОК"))
-
+        # layout_main.addWidget(self.btn_ok)
+        # self.btn_ok.clicked.connect(self.btn_ok_clicked)
+        self.button_box.button(QDialogButtonBox.Ok).setDefault(True)
+        self.button_box.accepted.connect(self.accept_prop)
+        layout_main.addWidget(self.button_box)
+        self.button_box.rejected.connect(self.reject)
         self.setLayout(layout_main)
+
+    def accept_prop(self):
+        # print("ok")
+        super().accept()
 
     def combo_micros_changed(self):
         print(self.combo_micros.currentText())
