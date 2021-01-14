@@ -43,19 +43,14 @@ class TableSettings(object):
 
 # Настройки программы, из которых
 class ProgramSettings(object):
-    def __init__(self, test: bool):
+    def __init__(self, test=False):
         self.micros_settings = MicrosSettings()
         self.snap_settings = SnapSettings()
         self.table_settings = TableSettings()
-        if not test:
-            self.load_current_from_xml("scan_settings.xml")
-        # self.pixels_in_mm = 10.0
-        # self.snap_width = 20.0
-        # self.snap_height = 10.0
-        # self.steps_in_mm = 80
-        # self.limits_step = (340 * self.steps_in_mm, 640 * self.steps_in_mm, 70 * self.steps_in_mm)
+        # if not test:
+        self.load_current_from_xml("scan_settings.xml", test)
 
-    def load_current_from_xml(self, file_name):
+    def load_current_from_xml(self, file_name, test=False):
         with open(file_name) as fileObj:
             xml = fileObj.read()
         root = etree.fromstring(xml)
@@ -78,35 +73,37 @@ class ProgramSettings(object):
                 for element_all in element_main.getchildren():
                     if element_all.tag == "Micros":
                         for element_micros in element_all.getchildren():
-                            if element_micros.tag == "Default" and element_micros.text == "True":
-                                for element_micros_2 in element_all.getchildren():
-                                    if element_micros_2.tag == "Resolution":
-                                        for element_resolution in element_micros_2.getchildren():
-                                            if element_resolution.tag == "Width":
-                                                self.snap_settings.snap_width = int(element_resolution.text)
-                                            elif element_resolution.tag == "Height":
-                                                self.snap_settings.snap_height = int(element_resolution.text)
-                                    if element_micros_2.tag == "Mode":
-                                        for element_mode in element_micros_2.getchildren():
-                                            if element_mode.tag == "Offset":
-                                                for element_offset in element_mode.getchildren():
-                                                    if element_offset.tag == "Left":
-                                                        self.snap_settings.offset[0] = int(element_offset.text)
-                                                    elif element_offset.tag == "Top":
-                                                        self.snap_settings.offset[1] = int(element_offset.text)
-                                                    elif element_offset.tag == "Right":
-                                                        self.snap_settings.offset[2] = int(element_offset.text)
-                                                    elif element_offset.tag == "Bottom":
-                                                        self.snap_settings.offset[3] = int(element_offset.text)
-                                            elif element_mode.tag == "PixelsInMM":
-                                                self.snap_settings.pixels_in_mm = float(element_mode.text)
-                                            elif element_mode.tag == "WorkHeightMM":
-                                                self.snap_settings.work_height = float(element_mode.text)
-                                            elif element_mode.tag == "Focus":
-                                                pass
-                                            elif element_mode.tag == "Zoom":
-                                                pass
-                                break
+                            if element_micros.tag == "Default":
+                                if (not test and element_micros.text == "True") \
+                                        or (test and element_micros.text == "Test"):
+                                    for element_micros_2 in element_all.getchildren():
+                                        if element_micros_2.tag == "Resolution":
+                                            for element_resolution in element_micros_2.getchildren():
+                                                if element_resolution.tag == "Width":
+                                                    self.snap_settings.snap_width = int(element_resolution.text)
+                                                elif element_resolution.tag == "Height":
+                                                    self.snap_settings.snap_height = int(element_resolution.text)
+                                        if element_micros_2.tag == "Mode":
+                                            for element_mode in element_micros_2.getchildren():
+                                                if element_mode.tag == "Offset":
+                                                    for element_offset in element_mode.getchildren():
+                                                        if element_offset.tag == "Left":
+                                                            self.snap_settings.offset[0] = int(element_offset.text)
+                                                        elif element_offset.tag == "Top":
+                                                            self.snap_settings.offset[1] = int(element_offset.text)
+                                                        elif element_offset.tag == "Right":
+                                                            self.snap_settings.offset[2] = int(element_offset.text)
+                                                        elif element_offset.tag == "Bottom":
+                                                            self.snap_settings.offset[3] = int(element_offset.text)
+                                                elif element_mode.tag == "PixelsInMM":
+                                                    self.snap_settings.pixels_in_mm = float(element_mode.text)
+                                                elif element_mode.tag == "WorkHeightMM":
+                                                    self.snap_settings.work_height = float(element_mode.text)
+                                                elif element_mode.tag == "Focus":
+                                                    pass
+                                                elif element_mode.tag == "Zoom":
+                                                    pass
+                                    break
 
         self.snap_settings.frame[0] = self.snap_settings.offset[0]
         self.snap_settings.frame[1] = self.snap_settings.offset[1]

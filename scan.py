@@ -243,14 +243,21 @@ class ScanWindow(QMainWindow):
     def coord_move(self, coord, mode="discrete", crop=False):
         self.table_controller.coord_move(coord, mode)
         if self.table_controller.test or mode != "continuous":
-            snap = self.micros_controller.snap(int(self.pixels_in_mm * (self.table_controller.coord_mm[0]
-                                                                        - self.snap_width_mm_half)),
-                                               int(self.pixels_in_mm * (self.table_controller.coord_mm[1]
-                                                                        - self.snap_height_mm_half)),
+            # snap = self.micros_controller.snap(int(self.pixels_in_mm * (self.table_controller.coord_mm[0]
+            #                                                             - self.snap_width_mm_half)),
+            #                                    int(self.pixels_in_mm * (self.table_controller.coord_mm[1]
+            #                                                             - self.snap_height_mm_half)),
+            #                                    int(self.pixels_in_mm * (self.table_controller.coord_mm[0]
+            #                                                             + self.snap_width_mm_half)),
+            #                                    int(self.pixels_in_mm * (self.table_controller.coord_mm[1]
+            #                                                             + self.snap_height_mm_half)),
+            #                                    crop=crop)
+            snap = self.micros_controller.snap(int(self.pixels_in_mm * (self.table_controller.coord_mm[0])),
+                                               int(self.pixels_in_mm * (self.table_controller.coord_mm[1])),
                                                int(self.pixels_in_mm * (self.table_controller.coord_mm[0]
-                                                                        + self.snap_width_mm_half)),
+                                                                        + self.snap_width_mm)),
                                                int(self.pixels_in_mm * (self.table_controller.coord_mm[1]
-                                                                        + self.snap_height_mm_half)),
+                                                                        + self.snap_height_mm)),
                                                crop=crop)
             self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(snap))
             self.lbl_img.repaint()
@@ -387,7 +394,11 @@ class ScanWindow(QMainWindow):
             # previous_direction = None
             direction = Direction()
             while direction.abs_index < 6:
-            # for direction in direction_sequence:
+                # Параметр захода за середину для ускорения обхода (от 0 до 4)
+                forward_over_move = 4
+                forward_count_total = 0
+                previous_direction = direction.previous()
+                # for direction in direction_sequence:
                 # Берем следующий фрейм до тех пор, пока не выйдем за границу изделтя
                 print("direction=" + str(direction))
                 while True:
@@ -395,65 +406,77 @@ class ScanWindow(QMainWindow):
                     # проверяем, не смещается ли изделие поперек линии поиска
                     # if previous_direction:
                     if direction.abs_index > 0:
-                        # Проверяем - не ушли ли мы вовнутрь объекта
+                        # Проверяем - не ушли ли мы вовнутрь или наружу объекта
                         while True:
-                            previous_direction = direction.previous()
-                            steps_count = self.check_object_middle(snap,
-                                                                   previous_direction,
-                                                                   [self.delta_x, self.delta_y])
-                            if steps_count == 0:
+                            correction_count = self.check_object_middle(snap,
+                                                                        previous_direction,
+                                                                        [self.delta_x, self.delta_y])
+                            if correction_count == 0:
                                 break
                             # Проверяем - не вышли ли мы за пределы стола
                             while True:
-                                x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
-                                y -= int(self.delta_y * steps_count * previous_direction[1] / self.pixels_in_mm)
+                                x += int(self.delta_x * correction_count * previous_direction[0] / self.pixels_in_mm)
+                                y -= int(self.delta_y * correction_count * previous_direction[1] / self.pixels_in_mm)
                                 if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
                                         self.table_controller.limits_mm[1]:
                                     x = all_x[-1]
                                     y = all_y[-1]
-                                    steps_count -= 1
-                                    if steps_count == 0:
+                                    correction_count -= int(abs(correction_count) / correction_count)
+                                    if correction_count == 0:
                                         break
                                 else:
                                     break
-                            if steps_count == 0:
+                            if correction_count == 0:
                                 break
-                            # x += int(self.delta_x * steps_count * previous_direction[0] / self.pixels_in_mm)
-                            # y -= int(self.delta_y * steps_count * previous_direction[1] / self.pixels_in_mm)
+                            # x += int(self.delta_x * correction_count * previous_direction[0] / self.pixels_in_mm)
+                            # y -= int(self.delta_y * correction_count * previous_direction[1] / self.pixels_in_mm)
                             all_x.append(x)
                             all_y.append(y)
                             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
-                            if steps_count > 0:
+                            if correction_count > 0:
                                 print('x = ' + str(x) + '; y = ' + str(y) + ' inside correction')
-                            elif steps_count < 0:
+                            elif correction_count < 0:
                                 print('x = ' + str(x) + '; y = ' + str(y) + ' outside correction')
 
-                    steps_count = self.find_border_in_image(snap, direction, [self.delta_x, self.delta_y])
+                    forward_count = self.find_border_in_image(snap,
+                                                              direction,
+                                                              [self.delta_x, self.delta_y],
+                                                              forward_over_move)
                     # Можно идти в направлении поиска границы еще
-                    if steps_count > 0:
-                        # Проверяем -`   не вышли ли мы за пределы стола
+                    if forward_count > 0:
+                        # Проверяем - не вышли ли мы за пределы стола
                         while True:
-                            x += int(self.delta_x * direction[0] * steps_count / self.pixels_in_mm)
-                            y -= int(self.delta_y * direction[1] * steps_count / self.pixels_in_mm)
+                            x += int(self.delta_x * direction[0] * forward_count / self.pixels_in_mm)
+                            y -= int(self.delta_y * direction[1] * forward_count / self.pixels_in_mm)
                             if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
                                     self.table_controller.limits_mm[1]:
                                 x = all_x[-1]
                                 y = all_y[-1]
-                                steps_count -= 1
-                                if steps_count == 0:
+                                forward_count -= 1
+                                if forward_count <= 0:
                                     break
                             else:
                                 break
-                        if steps_count == 0:
+                        if forward_count <= 0:
                             break
-                        # x += int(self.delta_x * direction[0] * steps_count / self.pixels_in_mm)
-                        # y -= int(self.delta_y * direction[1] * steps_count / self.pixels_in_mm)
+                        # x += int(self.delta_x * direction[0] * forward_count / self.pixels_in_mm)
+                        # y -= int(self.delta_y * direction[1] * forward_count / self.pixels_in_mm)
                         all_x.append(x)
                         all_y.append(y)
+                        forward_count_total += forward_count
                         snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
 
                         print('x = ' + str(x) + '; y = ' + str(y))
                     else:
+                        if forward_count_total > forward_over_move:
+                            all_x.pop()
+                            all_y.pop()
+                            x += int(self.delta_x * direction[0] * (-forward_over_move) / self.pixels_in_mm)
+                            y -= int(self.delta_y * direction[1] * (-forward_over_move) / self.pixels_in_mm)
+                            all_x.append(x)
+                            all_y.append(y)
+                            snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
+                            print('x = ' + str(x) + '; y = ' + str(y) + 'forward correction')
                         break
                 # previous_direction = direction
                 direction = direction.next()
@@ -463,8 +486,9 @@ class ScanWindow(QMainWindow):
             self.edt_border_x2.setText(str(max(all_x)))
             self.edt_border_y2.setText(str(max(all_y)))
         except Exception as e:
-            QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + str(e),
-                                 QMessageBox.Ok, QMessageBox.Ok)
+            raise
+            # QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + str(e),
+            #                      QMessageBox.Ok, QMessageBox.Ok)
         finally:
             self.control_elements_enabled(True)
             QMessageBox.information(self, "Info Dialog", "Границы определены", QMessageBox.Ok, QMessageBox.Ok)
@@ -474,25 +498,7 @@ class ScanWindow(QMainWindow):
 
     # Вспомогательная функция для определения - достигла ли камера границы при поиске в заданном направлении
     @staticmethod
-    def exp_find_border_in_image(img, direction, delta):
-        index = abs(direction[1])
-        # Проверяем - не стало ли по направлению движения "чисто" (все линии)
-        middle = int(img.shape[1 - index] / 2)
-        if direction[index] > 0:
-            middle -= 1
-        coord = [0, 0]
-        for i in range(5, -5, -1):
-            coord[index] = middle + i * delta[index] * direction[index]
-            for j in range(img.shape[index]):
-                coord[1 - index] = j
-                for k in range(3):
-                    if img[coord[1]][coord[0]][k] < 128:
-                        return i
-        return 0
-
-    # Вспомогательная функция для определения - достигла ли камера границы при поиске в заданном направлении
-    @staticmethod
-    def find_border_in_image(img, direction, delta):
+    def find_border_in_image(img, direction, delta, forward_over_move=0):
         index = abs(direction[1])
         # Проверяем - не стало ли по направлению движения "чисто" (все линии)
         middle = int(img.shape[1 - index] / 2)
@@ -505,7 +511,7 @@ class ScanWindow(QMainWindow):
                 coord[1 - index] = j
                 for k in range(3):
                     if img[coord[1]][coord[0]][k] < 128:
-                        return i + 3
+                        return i + forward_over_move
         return 0
 
     @staticmethod
@@ -851,7 +857,7 @@ class KeyboardButton:
 # Класс управления микроскопом (пока тестовая подделка)
 class MicrosController:
     def __init__(self, test: bool):
-        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_6.jpg"
+        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_3.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
         self.test_img = cv2.imread(self.test_img_path)[:, :, ::-1]
@@ -912,7 +918,7 @@ class MicrosController:
 
     def snap(self, x1: int, y1: int, x2: int, y2: int, crop=False):
         if self.test:
-            time.sleep(0.4)
+            time.sleep(0.3)
             # return np.copy(self.test_img[y1:y2, x1:x2, :])
             # Переворачиваем координаты съемки
             y2_r = 6400 - y1

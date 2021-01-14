@@ -55,6 +55,7 @@
 				<Focus>Auto</Focus>
 				<Zoom>0.1x</Zoom>
 			</Mode>
+			<Default>Test</Default>
 		</Micros>
 		<Micros name = "Веб камера">
 			<Resolution>
