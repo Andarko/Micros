@@ -605,10 +605,12 @@ class ScanWindow(QMainWindow):
             elif dlg_result == QMessageBox.Cancel:
                 return
         try:
-            x1 = float(self.edt_border_x1.toPlainText())
-            y1 = float(self.edt_border_y1.toPlainText())
-            x2 = float(self.edt_border_x2.toPlainText())
-            y2 = float(self.edt_border_y2.toPlainText())
+            coord = [float(self.edt_border_x1.toPlainText()), float(self.edt_border_y1.toPlainText()),
+                     float(self.edt_border_x2.toPlainText()), float(self.edt_border_y2.toPlainText())]
+            # x1 = float(self.edt_border_x1.toPlainText())
+            # y1 = float(self.edt_border_y1.toPlainText())
+            # x2 = float(self.edt_border_x2.toPlainText())
+            # y2 = float(self.edt_border_y2.toPlainText())
         except ValueError:
             print("Неверный формат данных")
             return
@@ -616,26 +618,54 @@ class ScanWindow(QMainWindow):
         if self.table_controller.server_status == 'uninitialized':
             self.table_controller.coord_init()
 
-        # Определяем на сколько мм выступает все поле съемки из целого числа кадров
-        # x_overage = x2 - x1 - self.frame_width * int((x2 - x1) / self.snap_width)
-        x_overage = (x2 - x1) % self.frame_width_mm
-        x_count = int((x2 - x1) // self.frame_width_mm) + 1
-        if x_overage > 0:
-            # А это - сколько надо добавить к полю съемки, чтобы получилось целое число кадров
-            x_deficit = self.frame_width_mm - x_overage
-            x_count += 1
-            x2 += x_deficit / 2
-            x1 -= x_deficit / 2
+        frame_size_mm = [self.frame_width_mm, self.frame_height_mm]
+        count = [0, 0]
 
-        # y_overage = y2 - y1 - self.frame_height * int((y2 - y1) / self.frame_height)
-        y_overage = (y2 - y1) % self.frame_height_mm
-        y_count = int((y2 - y1) // self.frame_height_mm + 1)
-        if y_overage > 0:
-            y_deficit = self.frame_height_mm - y_overage
-            y_count += 1
-            y2 += y_deficit / 2
-            y1 -= y_deficit / 2
-        print("x1={0}; y1={1}; x2={2}; y2={3}".format(x1, y1, x2, y2))
+        for i in range(2):
+            # Определяем на сколько мм выступает все поле съемки из целого числа кадров
+            x_overage = (coord[i + 2] - coord[i]) % frame_size_mm[i]
+            count[i] = int((coord[i + 2] - coord[i]) // frame_size_mm[i]) + 1
+            if x_overage > 0:
+                # А это - сколько надо добавить к полю съемки, чтобы получилось целое число кадров
+                x_deficit = frame_size_mm[i] - x_overage
+                count[i] += 1
+                coord[i] -= x_deficit / 2
+                coord[i + 2] += x_deficit / 2
+                # Проверка выхода за пределы стола
+                if coord[i] < 0:
+                    coord[i + 2] -= coord[i]
+                    coord[i] = 0
+                if coord[i + 2] > self.table_controller.limits_mm[i]:
+                    coord[i] -= coord[i + 2] - self.table_controller.limits_mm[i]
+                    coord[i + 2] = self.table_controller.limits_mm[i]
+                # Если изображение никак не хочет влазить в пределы стола, то надо наоборот его уменьшить...
+                if coord[i] < 0:
+                    coord[i] += x_overage / 2
+                    coord[i + 2] -= x_overage / 2
+                    count[i] -= 1
+
+        # y_overage = (y2 - y1) % self.frame_height_mm
+        # y_count = int((y2 - y1) // self.frame_height_mm + 1)
+        # if y_overage > 0:
+        #     y_deficit = self.frame_height_mm - y_overage
+        #     y_count += 1
+        #     y2 += y_deficit / 2
+        #     y1 -= y_deficit / 2
+        #
+        #     # Проверка выхода за пределы стола
+        #     if y1 < 0:
+        #         y2 -= y1
+        #         y1 = 0
+        #     if y2 > self.table_controller.limits_mm[1]:
+        #         y1 -= y2 - self.table_controller.limits_mm[1]
+        #         y2 = self.table_controller.limits_mm[1]
+        #     # Если изображение никак не хочет влазить в пределы стола, то надо наоборот его уменьшить...
+        #     if y1 < 0:
+        #         y1 += y_overage / 2
+        #         y2 -= y_overage / 2
+        #         y_count -= 1
+
+        print("x1={0}; y1={1}; x2={2}; y2={3}".format(coord[0], coord[1], coord[2], coord[3]))
         # Работа с директорией для сохранения изображений
         # shutil.rmtree(self.dir_for_img)
         if not os.path.exists(self.dir_for_img):
@@ -643,27 +673,27 @@ class ScanWindow(QMainWindow):
         for file in os.listdir(self.dir_for_img):
             os.remove(os.path.join(self.dir_for_img, file))
         # Получение и сохранение изображений в директорию
-        left_dir = abs(self.table_controller.coord_mm[0] - x1) > abs(self.table_controller.coord_mm[0] - x2)
+        left_dir = abs(self.table_controller.coord_mm[0] - coord[0]) > abs(self.table_controller.coord_mm[0] - coord[2])
 
         # выбираем обход изображения, исходя из того - ближе мы к его верху или низу
         j_start = 0
-        j_finish = y_count
+        j_finish = count[1]
         j_delta = 1
-        if abs(self.table_controller.coord_mm[1] - y1) > abs(self.table_controller.coord_mm[1] - y2):
-            j_start = y_count - 1
+        if abs(self.table_controller.coord_mm[1] - coord[1]) > abs(self.table_controller.coord_mm[1] - coord[3]):
+            j_start = count[1] - 1
             j_finish = -1
             j_delta = -1
 
         for j in range(j_start, j_finish, j_delta):
-            y = y1 + j * self.frame_height_mm
+            y = coord[1] + j * self.frame_height_mm
             # В проге просмотра ось y вернута вниз
-            j_r = y_count - 1 - j
+            j_r = count[1] - 1 - j
             if left_dir:
-                x_range = range(x_count - 1, -1, -1)
+                x_range = range(count[0] - 1, -1, -1)
             else:
-                x_range = range(0, x_count, 1)
+                x_range = range(0, count[0], 1)
             for i in x_range:
-                x = x1 + i * self.frame_width_mm
+                x = coord[0] + i * self.frame_width_mm
                 snap = self.coord_move([x, y, self.work_height], mode="discrete")
                 cv2.imwrite(os.path.join(self.dir_for_img, "S_{0}_{1}.jpg".format(j_r + 1, i + 1)), snap[:, :, ::-1])
                 print('x = ' + str(x) + '; y = ' + str(y))
@@ -673,10 +703,10 @@ class ScanWindow(QMainWindow):
         # Создание файла описания XML
         root = Xml.Element("Root")
         elem_rc = Xml.Element("RowCount")
-        elem_rc.text = str(int((y2 - y1) / self.frame_height_mm) + 1)
+        elem_rc.text = str(int((coord[3] - coord[1]) / self.frame_height_mm) + 1)
         root.append(elem_rc)
         elem_cc = Xml.Element("ColCount")
-        elem_cc.text = str(int((x2 - x1) / self.frame_width_mm) + 1)
+        elem_cc.text = str(int((coord[2] - coord[0]) / self.frame_width_mm) + 1)
         root.append(elem_cc)
         elem_img = Xml.Element("Image")
         root.append(elem_img)
@@ -925,6 +955,7 @@ class MicrosController:
             y1_r = 6400 - y2
             return np.copy(self.test_img[y1_r:y2_r, x1:x2, :])
         else:
+            time.sleep(0.05)
             if crop:
                 return np.copy(self.video_stream.read()[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :])
             else:

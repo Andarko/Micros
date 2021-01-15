@@ -48,9 +48,9 @@ class ProgramSettings(object):
         self.snap_settings = SnapSettings()
         self.table_settings = TableSettings()
         # if not test:
-        self.load_current_from_xml("scan_settings.xml", test)
+        self.load_settings_from_xml("scan_settings.xml", test)
 
-    def load_current_from_xml(self, file_name, test=False):
+    def load_settings_from_xml(self, file_name, test=False):
         with open(file_name) as fileObj:
             xml = fileObj.read()
         root = etree.fromstring(xml)
@@ -238,6 +238,9 @@ class SettingsDialog(QDialog):
         layout_main.addWidget(self.button_box)
         self.button_box.rejected.connect(self.reject)
         self.setLayout(layout_main)
+
+    # def load_settings_from_file(self):
+    #     pass
 
     def accept_prop(self):
         # print("ok")
