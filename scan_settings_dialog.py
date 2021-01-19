@@ -17,14 +17,16 @@ class AllSettings(object):
 # Классы для хранения текущих выбранных настроек
 # Выбранные настройки микроскопа
 class MicrosSettings(object):
-    def __init__(self):
-        self.name: str
-        self.resolution: QSize
+    def __init__(self, name=""):
+        self.name = name
+        self.resolution = QSize()
+        self.all_snap_settings = list()
 
 
 # Выбранные настройки снимка (калибровка)
 class SnapSettings(object):
-    def __init__(self):
+    def __init__(self, name=""):
+        self.name = name
         self.pixels_in_mm = 10.0
         self.snap_width = 200
         self.snap_height = 100
@@ -44,11 +46,13 @@ class TableSettings(object):
 # Настройки программы, из которых
 class ProgramSettings(object):
     def __init__(self, test=False):
+        self.all_micros_settings = list()
         self.micros_settings = MicrosSettings()
         self.snap_settings = SnapSettings()
         self.table_settings = TableSettings()
+        self.test = test
         # if not test:
-        self.load_settings_from_xml("scan_settings.xml", test)
+        self.load_settings_from_xml("scan_settings.xml")
 
     def load_settings_from_xml(self, file_name, test=False):
         with open(file_name) as fileObj:
@@ -72,49 +76,61 @@ class ProgramSettings(object):
             elif element_main.tag == "AllMicros":
                 for element_all in element_main.getchildren():
                     if element_all.tag == "Micros":
+                        new_micros_settings = MicrosSettings(element_all.get('name'))
+                        self.all_micros_settings.append(new_micros_settings)
+                        micros_settings_used = False
                         for element_micros in element_all.getchildren():
                             if element_micros.tag == "Default":
-                                if (not test and element_micros.text == "True") \
-                                        or (test and element_micros.text == "Test"):
-                                    for element_micros_2 in element_all.getchildren():
-                                        if element_micros_2.tag == "Resolution":
-                                            for element_resolution in element_micros_2.getchildren():
-                                                if element_resolution.tag == "Width":
-                                                    self.snap_settings.snap_width = int(element_resolution.text)
-                                                elif element_resolution.tag == "Height":
-                                                    self.snap_settings.snap_height = int(element_resolution.text)
-                                        if element_micros_2.tag == "Mode":
-                                            for element_mode in element_micros_2.getchildren():
-                                                if element_mode.tag == "Offset":
-                                                    for element_offset in element_mode.getchildren():
-                                                        if element_offset.tag == "Left":
-                                                            self.snap_settings.offset[0] = int(element_offset.text)
-                                                        elif element_offset.tag == "Top":
-                                                            self.snap_settings.offset[1] = int(element_offset.text)
-                                                        elif element_offset.tag == "Right":
-                                                            self.snap_settings.offset[2] = int(element_offset.text)
-                                                        elif element_offset.tag == "Bottom":
-                                                            self.snap_settings.offset[3] = int(element_offset.text)
-                                                elif element_mode.tag == "PixelsInMM":
-                                                    self.snap_settings.pixels_in_mm = float(element_mode.text)
-                                                elif element_mode.tag == "WorkHeightMM":
-                                                    self.snap_settings.work_height = float(element_mode.text)
-                                                elif element_mode.tag == "Focus":
-                                                    pass
-                                                elif element_mode.tag == "Zoom":
-                                                    pass
-                                    break
+                                if (not self.test and element_micros.text == "True") \
+                                        or (self.test and element_micros.text == "Test"):
+                                    micros_settings_used = True
+                                    self.micros_settings = new_micros_settings
 
-        self.snap_settings.frame[0] = self.snap_settings.offset[0]
-        self.snap_settings.frame[1] = self.snap_settings.offset[1]
-        self.snap_settings.frame[2] = self.snap_settings.snap_width - self.snap_settings.offset[2]
-        self.snap_settings.frame[3] = self.snap_settings.snap_height - self.snap_settings.offset[3]
+                            elif element_micros.tag == "Resolution":
+                                for element_resolution in element_micros.getchildren():
+                                    if element_resolution.tag == "Width":
+                                        new_micros_settings.resolution.setWidth(int(element_resolution.text))
+                                    elif element_resolution.tag == "Height":
+                                        new_micros_settings.resolution.setHeight(int(element_resolution.text))
+                            elif element_micros.tag == "Mode":
+                                new_snap_settings = SnapSettings(element_micros.get('name'))
+                                new_micros_settings.all_snap_settings.append(new_snap_settings)
+                                new_snap_settings.snap_width = new_micros_settings.resolution.width()
+                                new_snap_settings.snap_height = new_micros_settings.resolution.height()
+                                for element_mode in element_micros.getchildren():
+                                    if element_mode.tag == "Default":
+                                        if micros_settings_used and element_mode.text == "True":
+                                            self.snap_settings = new_snap_settings
+                                    elif element_mode.tag == "Offset":
+                                        for element_offset in element_mode.getchildren():
+                                            if element_offset.tag == "Left":
+                                                new_snap_settings.offset[0] = int(element_offset.text)
+                                            elif element_offset.tag == "Top":
+                                                new_snap_settings.offset[1] = int(element_offset.text)
+                                            elif element_offset.tag == "Right":
+                                                new_snap_settings.offset[2] = int(element_offset.text)
+                                            elif element_offset.tag == "Bottom":
+                                                new_snap_settings.offset[3] = int(element_offset.text)
+                                    elif element_mode.tag == "PixelsInMM":
+                                        new_snap_settings.pixels_in_mm = float(element_mode.text)
+                                    elif element_mode.tag == "WorkHeightMM":
+                                        new_snap_settings.work_height = float(element_mode.text)
+                                    elif element_mode.tag == "Focus":
+                                        pass
+                                    elif element_mode.tag == "Zoom":
+                                        pass
+                                new_snap_settings.frame[0] = new_snap_settings.offset[0]
+                                new_snap_settings.frame[1] = new_snap_settings.offset[1]
+                                new_snap_settings.frame[2] = new_snap_settings.snap_width - new_snap_settings.offset[2]
+                                new_snap_settings.frame[3] = new_snap_settings.snap_height - new_snap_settings.offset[3]
+        pass
 
 
 class SettingsDialog(QDialog):
     def __init__(self, program_settings: ProgramSettings):
         super().__init__()
-        self.all_micros_settings = list()
+        # self.all_micros_settings = list()
+        self.program_settings = program_settings
         self.combo_micros = QComboBox()
         self.combo_modes = QComboBox()
         self.edt_res_width = QSpinBox()
@@ -239,8 +255,36 @@ class SettingsDialog(QDialog):
         self.button_box.rejected.connect(self.reject)
         self.setLayout(layout_main)
 
-    # def load_settings_from_file(self):
-    #     pass
+        self.load_all_micros_to_ui()
+
+    # Загрука списка камер
+    def load_all_micros_to_ui(self):
+        for micros_settings in self.program_settings.all_micros_settings:
+            self.combo_micros.addItem(micros_settings.name)
+        for i in range(len(self.program_settings.all_micros_settings)):
+            if self.program_settings.all_micros_settings[i] == self.program_settings.micros_settings:
+                self.combo_micros.setCurrentIndex(i)
+                self.load_all_modes_settings_to_ui(self.program_settings.micros_settings)
+
+    # Загрузка настроек камеры
+    def load_all_modes_settings_to_ui(self, micros_settings: MicrosSettings):
+        self.edt_res_width.setValue(micros_settings.resolution.width())
+        self.edt_res_height.setValue(micros_settings.resolution.height())
+        self.combo_modes.clear()
+        for mode in micros_settings.all_snap_settings:
+            self.combo_modes.addItem(mode.name)
+        for i in range(len(micros_settings.all_snap_settings)):
+            if micros_settings.all_snap_settings[i] == self.program_settings.snap_settings:
+                self.combo_modes.setCurrentIndex(i)
+                self.load_mode_settings_to_ui(self.program_settings.snap_settings)
+
+    def load_mode_settings_to_ui(self, mode_settings: SnapSettings):
+        self.edt_offset_left.setValue(mode_settings.offset[0])
+        self.edt_offset_top.setValue(mode_settings.offset[1])
+        self.edt_offset_right.setValue(mode_settings.offset[2])
+        self.edt_offset_bottom.setValue(mode_settings.offset[3])
+        self.edt_pixels_in_mm.setValue(mode_settings.pixels_in_mm)
+        self.edt_work_height.setValue(mode_settings.work_height)
 
     def accept_prop(self):
         # print("ok")
@@ -250,7 +294,7 @@ class SettingsDialog(QDialog):
         print(self.combo_micros.currentText())
 
     def combo_modes_changed(self):
-        print(self.combo_set_micro.currentText())
+        print(self.combo_modes.currentText())
 
     def btn_micros_add_click(self):
         input_dialog = QInputDialog()

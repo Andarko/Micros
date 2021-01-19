@@ -9,11 +9,12 @@
 	</Table>
 	<AllMicros>
 		<Micros name = "Микроскоп_1 800к">
+			<Default></Default>
 			<Resolution>
 				<Width>1024</Width>
 				<Height>768</Height>
 			</Resolution>
-			<Mode name = "Default">
+			<Mode name = "1x">
 				<Offset>
 					<Left>0</Left>
 					<Top>0</Top>
@@ -24,6 +25,19 @@
 				<WorkHeightMM>50</WorkHeightMM>
 				<Focus>Auto</Focus>
 				<Zoom>50x</Zoom>
+			</Mode>
+			<Mode name = "2x">
+				<Default>True</Default>
+				<Offset>
+					<Left>0</Left>
+					<Top>0</Top>
+					<Right>0</Right>
+					<Bottom>0</Bottom>
+				</Offset>
+				<PixelsInMM>400</PixelsInMM>
+				<WorkHeightMM>35</WorkHeightMM>
+				<Focus>Auto</Focus>
+				<Zoom>100x</Zoom>
 			</Mode>
 		</Micros>
 		<Micros name = "Микроскоп_1 300к">
@@ -39,11 +53,13 @@
 			</Resolution>
 		</Micros>
 		<Micros name = "Микроскоп_тест 20к">
+			<Default>Test</Default>
 			<Resolution>
 				<Width>200</Width>
 				<Height>100</Height>
 			</Resolution>
 			<Mode name = "Default">
+				<Default>True</Default>
 				<Offset>
 					<Left>0</Left>
 					<Top>0</Top>
@@ -55,9 +71,9 @@
 				<Focus>Auto</Focus>
 				<Zoom>0.1x</Zoom>
 			</Mode>
-			<Default>Test</Default>
 		</Micros>
 		<Micros name = "Веб камера">
+			<Default>True</Default>
 			<Resolution>
 				<Width>640</Width>
 				<Height>480</Height>
@@ -73,8 +89,8 @@
 				<WorkHeightMM>10</WorkHeightMM>
 				<Focus>Auto</Focus>
 				<Zoom>1x</Zoom>
+				<Default>True</Default>
 			</Mode>
-			<Default>True</Default>
 		</Micros>
 	</AllMicros>
 </Settings>

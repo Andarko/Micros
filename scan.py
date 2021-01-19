@@ -38,9 +38,9 @@ class ScanWindow(QMainWindow):
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
-        self.table_controller = TableController(self.loop)
+        test = True
+        self.table_controller = TableController(self.loop, test)
         # TEST Для удобства тестирования передаю в контроллер стола контроллер камеры
-        self.table_controller.test = True
         self.micros_controller = MicrosController(self.table_controller.test)
         # if self.table_controller.test:
         #     self.table_controller.micros_controller = self.micros_controller
@@ -967,7 +967,7 @@ class MicrosController:
 # 2. Запускает сервер на Raspberry pi
 # 3. Управляет движениями станка
 class TableController:
-    def __init__(self, loop, hostname="192.168.42.100", port=8080):
+    def __init__(self, loop, test=False, hostname="192.168.42.100", port=8080):
         # Параметры подключения к серверу raspberry pi
         self.hostname = hostname
         self.port = port
@@ -988,7 +988,7 @@ class TableController:
         # self.steps_in_mm = 80
         # self.limits_step = (340 * self.steps_in_mm, 640 * self.steps_in_mm, 70 * self.steps_in_mm)
         # Режим тестирования - без работы с установкой
-        self.test = False
+        self.test = test
         # self.micros_controller: MicrosController = None
         # self.programSettings: ProgramSettings = None
 
