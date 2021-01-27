@@ -19,8 +19,9 @@ class AllSettings(object):
 class MicrosSettings(object):
     def __init__(self, name=""):
         self.name = name
-        self.resolution = QSize()
+        self.resolution = QSize(1024, 768)
         self.all_snap_settings = list()
+        self.default = False
 
 
 # Выбранные настройки снимка (калибровка)
@@ -33,6 +34,9 @@ class SnapSettings(object):
         self.offset = [0, 0, 0, 0]
         self.frame = [0, 0, 200, 100]
         self.work_height = 50
+        self.focus = ""
+        self.zoom = ":"
+        self.default = False
 
 
 # Текущие настройки стола
@@ -47,19 +51,21 @@ class TableSettings(object):
 class ProgramSettings(object):
     def __init__(self, test=False):
         self.all_micros_settings = list()
-        self.micros_settings = MicrosSettings()
-        self.snap_settings = SnapSettings()
+        self.micros_settings: MicrosSettings = None
+        self.snap_settings: SnapSettings = None
         self.table_settings = TableSettings()
         self.test = test
         # if not test:
         self.load_settings_from_xml("scan_settings.xml")
 
+    # Загрузка настроек из файла
     def load_settings_from_xml(self, file_name, test=False):
         with open(file_name) as fileObj:
             xml = fileObj.read()
         root = etree.fromstring(xml)
 
         for element_main in root.getchildren():
+            # Загрузка параметров стола
             if element_main.tag == "Table":
                 for element_table in element_main.getchildren():
                     if element_table.tag == "StepsInMM":
@@ -73,17 +79,19 @@ class ProgramSettings(object):
                             elif el_limit.tag == "Z":
                                 self.table_settings.limits_mm[2] = int(el_limit.text)
 
+            # Загрузка списка микроскопов
             elif element_main.tag == "AllMicros":
                 for element_all in element_main.getchildren():
+                    # Данные микроскопа
                     if element_all.tag == "Micros":
                         new_micros_settings = MicrosSettings(element_all.get('name'))
                         self.all_micros_settings.append(new_micros_settings)
-                        micros_settings_used = False
                         for element_micros in element_all.getchildren():
+                            # Микроскоп, выбранный по умолчанию
                             if element_micros.tag == "Default":
                                 if (not self.test and element_micros.text == "True") \
-                                        or (self.test and element_micros.text == "Test"):
-                                    micros_settings_used = True
+                                        or (self.test and new_micros_settings.name == "Микроскоп_тест 20к"):
+                                    new_micros_settings.default = True
                                     self.micros_settings = new_micros_settings
 
                             elif element_micros.tag == "Resolution":
@@ -92,15 +100,16 @@ class ProgramSettings(object):
                                         new_micros_settings.resolution.setWidth(int(element_resolution.text))
                                     elif element_resolution.tag == "Height":
                                         new_micros_settings.resolution.setHeight(int(element_resolution.text))
+                            # Чтеник списка модов микроскопа
                             elif element_micros.tag == "Mode":
                                 new_snap_settings = SnapSettings(element_micros.get('name'))
                                 new_micros_settings.all_snap_settings.append(new_snap_settings)
                                 new_snap_settings.snap_width = new_micros_settings.resolution.width()
                                 new_snap_settings.snap_height = new_micros_settings.resolution.height()
                                 for element_mode in element_micros.getchildren():
-                                    if element_mode.tag == "Default":
-                                        if micros_settings_used and element_mode.text == "True":
-                                            self.snap_settings = new_snap_settings
+                                    if element_mode.tag == "Default" and element_mode.text == "True":
+                                        new_snap_settings.default = True
+                                        # self.snap_settings = new_snap_settings
                                     elif element_mode.tag == "Offset":
                                         for element_offset in element_mode.getchildren():
                                             if element_offset.tag == "Left":
@@ -116,14 +125,17 @@ class ProgramSettings(object):
                                     elif element_mode.tag == "WorkHeightMM":
                                         new_snap_settings.work_height = float(element_mode.text)
                                     elif element_mode.tag == "Focus":
-                                        pass
+                                        new_snap_settings.focus = element_mode.text
                                     elif element_mode.tag == "Zoom":
-                                        pass
+                                        new_snap_settings.zoom = element_mode.text
                                 new_snap_settings.frame[0] = new_snap_settings.offset[0]
                                 new_snap_settings.frame[1] = new_snap_settings.offset[1]
                                 new_snap_settings.frame[2] = new_snap_settings.snap_width - new_snap_settings.offset[2]
                                 new_snap_settings.frame[3] = new_snap_settings.snap_height - new_snap_settings.offset[3]
-        pass
+        if self.all_micros_settings and not self.micros_settings:
+            self.micros_settings = self.all_micros_settings[0]
+        if self.micros_settings.all_snap_settings and not self.snap_settings:
+            self.snap_settings = self.micros_settings.all_snap_settings[0]
 
 
 class SettingsDialog(QDialog):
@@ -142,7 +154,7 @@ class SettingsDialog(QDialog):
         self.edt_pixels_in_mm = QDoubleSpinBox()
         self.edt_work_height = QDoubleSpinBox()
         self.edt_focus = QLineEdit()
-        self.edt_zoom_ratio = QLineEdit()
+        self.edt_zoom = QLineEdit()
         # self.btn_ok = QPushButton("OK")
         self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
@@ -161,7 +173,7 @@ class SettingsDialog(QDialog):
         lbl_micros.setFont(font_title)
         layout_main.addWidget(lbl_micros)
         layout_micros = QHBoxLayout()
-        self.combo_micros.currentIndexChanged.connect(self.combo_micros_changed)
+        # self.combo_micros.currentIndexChanged.connect(self.combo_micros_changed)
         layout_micros.addWidget(self.combo_micros)
         btn_micros_add = QPushButton("Добавить")
         btn_micros_add.setMaximumWidth(80)
@@ -243,7 +255,7 @@ class SettingsDialog(QDialog):
         self.edt_work_height.setDecimals(3)
         layout_offset.addRow(QLabel("Высота работы камеры, мм"), self.edt_work_height)
         layout_offset.addRow(QLabel("Фокус"), self.edt_focus)
-        layout_offset.addRow(QLabel("Увеличение"), self.edt_zoom_ratio)
+        layout_offset.addRow(QLabel("Увеличение"), self.edt_zoom)
 
         layout_main.addLayout(layout_offset)
 
@@ -257,50 +269,92 @@ class SettingsDialog(QDialog):
 
         self.load_all_micros_to_ui()
 
+        self.combo_micros.currentIndexChanged.connect(self.combo_micros_changed)
+
     # Загрука списка камер
     def load_all_micros_to_ui(self):
-        for micros_settings in self.program_settings.all_micros_settings:
-            self.combo_micros.addItem(micros_settings.name)
-        for i in range(len(self.program_settings.all_micros_settings)):
-            if self.program_settings.all_micros_settings[i] == self.program_settings.micros_settings:
-                self.combo_micros.setCurrentIndex(i)
-                self.load_all_modes_settings_to_ui(self.program_settings.micros_settings)
+        if self.program_settings.all_micros_settings:
+            for micros_settings in self.program_settings.all_micros_settings:
+                self.combo_micros.addItem(micros_settings.name)
+            i = -1
+            for micros_settings in self.program_settings.all_micros_settings:
+                i += 1
+                if micros_settings.default:
+                    self.combo_micros.setCurrentIndex(i)
+                    self.load_all_modes_to_ui(self.program_settings.micros_settings)
+                    return
+            self.combo_micros.setCurrentIndex(0)
+            self.load_all_modes_to_ui(self.program_settings.micros_settings)
 
     # Загрузка настроек камеры
-    def load_all_modes_settings_to_ui(self, micros_settings: MicrosSettings):
+    def load_all_modes_to_ui(self, micros_settings: MicrosSettings):
+        if self.program_settings.micros_settings:
+            self.program_settings.micros_settings.default = False
+            self.program_settings.micros_settings = micros_settings
+            self.program_settings.micros_settings.default = True
+
         self.edt_res_width.setValue(micros_settings.resolution.width())
         self.edt_res_height.setValue(micros_settings.resolution.height())
         self.combo_modes.clear()
         for mode in micros_settings.all_snap_settings:
             self.combo_modes.addItem(mode.name)
-        for i in range(len(micros_settings.all_snap_settings)):
-            if micros_settings.all_snap_settings[i] == self.program_settings.snap_settings:
+        i = -1
+        for mode in micros_settings.all_snap_settings:
+            i += 1
+            if mode.default:
                 self.combo_modes.setCurrentIndex(i)
                 self.load_mode_settings_to_ui(self.program_settings.snap_settings)
 
-    def load_mode_settings_to_ui(self, mode_settings: SnapSettings):
-        self.edt_offset_left.setValue(mode_settings.offset[0])
-        self.edt_offset_top.setValue(mode_settings.offset[1])
-        self.edt_offset_right.setValue(mode_settings.offset[2])
-        self.edt_offset_bottom.setValue(mode_settings.offset[3])
-        self.edt_pixels_in_mm.setValue(mode_settings.pixels_in_mm)
-        self.edt_work_height.setValue(mode_settings.work_height)
+    def load_mode_settings_to_ui(self, snap_settings: SnapSettings):
+        if not snap_settings:
+            snap_settings = SnapSettings()
+        change_default = snap_settings in self.program_settings.micros_settings.all_snap_settings and\
+                         self.program_settings.snap_settings in self.program_settings.micros_settings.all_snap_settings
+
+        if change_default:
+            self.program_settings.snap_settings.Default = False
+        snap_settings.Default = True
+
+        self.edt_offset_left.setValue(snap_settings.offset[0])
+        self.edt_offset_top.setValue(snap_settings.offset[1])
+        self.edt_offset_right.setValue(snap_settings.offset[2])
+        self.edt_offset_bottom.setValue(snap_settings.offset[3])
+        self.edt_pixels_in_mm.setValue(snap_settings.pixels_in_mm)
+        self.edt_work_height.setValue(snap_settings.work_height)
+        self.edt_focus.setText(snap_settings.focus)
+        self.edt_zoom.setText(snap_settings.zoom)
+
+        self.program_settings.snap_settings = snap_settings
 
     def accept_prop(self):
         # print("ok")
         super().accept()
 
     def combo_micros_changed(self):
-        print(self.combo_micros.currentText())
+        print("micros: " + self.combo_micros.currentText())
+        self.load_all_modes_to_ui(self.program_settings.all_micros_settings[self.combo_micros.currentIndex()])
 
     def combo_modes_changed(self):
-        print(self.combo_modes.currentText())
+        if self.combo_modes.currentIndex() >= 0:
+            self.load_mode_settings_to_ui(self.program_settings.micros_settings.all_snap_settings[
+                                              self.combo_modes.currentIndex()])
+        else:
+            self.load_mode_settings_to_ui(None)
+        print("mode: " + self.combo_modes.currentText())
 
-    def btn_micros_add_click(self):
+    def btn_micros_add_click(self, default_text = ""):
+        if not default_text:
+            default_text = ""
         input_dialog = QInputDialog()
-        text, ok = input_dialog.getText(self, "Добавление камеры", "Наименование", QLineEdit.Normal)
+        text, ok = input_dialog.getText(self, "Добавление камеры", "Наименование", QLineEdit.Normal, default_text)
 
-        if ok:
+        if ok and text:
+            for micros_settings in self.program_settings.all_micros_settings:
+                if micros_settings.name == text:
+                    QMessageBox.warning(self, "Warning!", "Данное имя уже используется", QMessageBox.Ok, QMessageBox.Ok)
+                    self.btn_micros_add_click(text)
+                    return
+            self.program_settings.all_micros_settings.append(MicrosSettings(text))
             self.combo_micros.addItem(text)
             self.combo_micros.setCurrentIndex(self.combo_micros.count() - 1)
 
@@ -312,6 +366,7 @@ class SettingsDialog(QDialog):
                                         "Переименование камеры", "Наименование",
                                         QLineEdit.Normal, self.combo_micros.currentText())
         if ok and text:
+            self.program_settings.micros_settings.name = text
             i = self.combo_micros.currentIndex()
             self.combo_micros.removeItem(self.combo_micros.currentIndex())
             self.combo_micros.insertItem(i, text)
@@ -330,6 +385,12 @@ class SettingsDialog(QDialog):
             text, ok = input_dialog.getText(self, "Удаление камеры",
                                             "Для удаления напишите \"удалить\"", QLineEdit.Normal)
             if ok and str.lower(text) == "удалить":
+                index = self.combo_micros.currentIndex()
+                self.program_settings.all_micros_settings.pop()
+                if len(self.program_settings.all_micros_settings) > 0:
+                    if index == len(self.program_settings.all_micros_settings):
+                        index -= 1
+                self.program_settings.micros_settings = self.program_settings.all_micros_settings[index]
                 self.combo_micros.removeItem(self.combo_micros.currentIndex())
 
     def btn_modes_set_add_click(self):
@@ -337,24 +398,24 @@ class SettingsDialog(QDialog):
         text, ok = input_dialog.getText(self, "Добавление настройки", "Наименование", QLineEdit.Normal)
 
         if ok:
-            self.combo_set_micro.addItem(text)
-            self.combo_set_micro.setCurrentIndex(self.combo_set_micro.count() - 1)
+            self.combo_modes.addItem(text)
+            self.combo_modes.setCurrentIndex(self.combo_modes.count() - 1)
 
     def btn_modes_set_edt_click(self):
-        if self.combo_set_micro.count() == 0:
+        if self.combo_modes.count() == 0:
             return
         input_dialog = QInputDialog()
         text, ok = input_dialog.getText(self,
                                         "Переименование настройки", "Наименование",
-                                        QLineEdit.Normal, self.combo_set_micro.currentText())
+                                        QLineEdit.Normal, self.combo_modes.currentText())
         if ok and text:
-            i = self.combo_set_micro.currentIndex()
-            self.combo_set_micro.removeItem(self.combo_set_micro.currentIndex())
-            self.combo_set_micro.insertItem(i, text)
-            self.combo_set_micro.setCurrentIndex(i)
+            i = self.combo_modes.currentIndex()
+            self.combo_modes.removeItem(self.combo_modes.currentIndex())
+            self.combo_modes.insertItem(i, text)
+            self.combo_modes.setCurrentIndex(i)
 
     def btn_modes_set_del_click(self):
-        if self.combo_set_micro.count() == 0:
+        if self.combo_modes.count() == 0:
             return
         dlg_result = QMessageBox.question(self,
                                           "Confirm Dialog",
@@ -366,4 +427,4 @@ class SettingsDialog(QDialog):
             text, ok = input_dialog.getText(self, "Удаление настройки",
                                             "Для удаления напишите \"удалить\"", QLineEdit.Normal)
             if ok and str.lower(text) == "удалить":
-                self.combo_set_micro.removeItem(self.combo_set_micro.currentIndex())
+                self.combo_modes.removeItem(self.combo_modes.currentIndex())

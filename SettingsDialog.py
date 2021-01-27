@@ -7,5 +7,5 @@ class ProgramSettings(object):
 
 
 class SettingsDialog(QDialog):
-    def __init__(self, programSettings = ProgramSettings()):
+    def __init__(self, programSettings: ProgramSettings):
         super().__init__()

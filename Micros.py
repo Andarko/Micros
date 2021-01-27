@@ -217,17 +217,17 @@ class SavedData(object):
             with open(xml_file) as fobj:
                 xml = fobj.read()
             root = etree.fromstring(xml)
-            for app in root.getchildren():
-                if app.tag == "RowCount":
-                    self.rowCount = int(app.text)
-                elif app.tag == "ColCount":
-                    self.colCount = int(app.text)
-                elif app.tag == "Image":
-                    for elem in app.getchildren():
+            for section in root.getchildren():
+                if section.tag == "RowCount":
+                    self.rowCount = int(section.text)
+                elif section.tag == "ColCount":
+                    self.colCount = int(section.text)
+                elif section.tag == "Image":
+                    for elem in section.getchildren():
                         if elem.tag == "Format":
-                            self.format = app.text
+                            self.format = section.text
                         # elif elem.tag == "AllImageInMemory":
-                        #    self.allImageInMemory = bool(app.text)
+                        #    self.allImageInMemory = bool(section.text)
                         elif elem.tag == "ImgSize":
                             for sub_elem in elem.getchildren():
                                 if sub_elem.tag == "Width":

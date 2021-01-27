@@ -286,6 +286,9 @@ class ScanWindow(QMainWindow):
         self.closed = True
 
     def services_menu_action_settings_click(self):
+        QMessageBox.warning(self, "Warning!",
+                            "Программа работает в тестовом режиме. Настройки не будут сохраняться!",
+                            QMessageBox.Ok, QMessageBox.Ok)
         settings_dialog = SettingsDialog(self.program_settings)
         settings_dialog.setAttribute(Qt.WA_DeleteOnClose)
         settings_dialog.exec()
@@ -476,7 +479,7 @@ class ScanWindow(QMainWindow):
                             all_x.append(x)
                             all_y.append(y)
                             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
-                            print('x = ' + str(x) + '; y = ' + str(y) + 'forward correction')
+                            print('x = ' + str(x) + '; y = ' + str(y) + ' forward correction')
                         break
                 # previous_direction = direction
                 direction = direction.next()
@@ -486,9 +489,9 @@ class ScanWindow(QMainWindow):
             self.edt_border_x2.setText(str(max(all_x)))
             self.edt_border_y2.setText(str(max(all_y)))
         except Exception as e:
-            raise
-            # QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + str(e),
-            #                      QMessageBox.Ok, QMessageBox.Ok)
+            # raise
+            QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + str(e),
+                                 QMessageBox.Ok, QMessageBox.Ok)
         finally:
             self.control_elements_enabled(True)
             QMessageBox.information(self, "Info Dialog", "Границы определены", QMessageBox.Ok, QMessageBox.Ok)
@@ -823,11 +826,12 @@ class ScanWindow(QMainWindow):
 
 # Класс направления - умеет выдавать следующее и предыдущее направление
 class Direction:
-    def __init__(self, index=0, direction=[1, 0]):
-        # self.__direction_sequence = [[1, 0], [0, 1], [-1, 0], [0, -1]]
-        # self.__index = index % 4
+    def __init__(self, index=0, direction=None):
         self.__abs_index = index
-        self.__direction = direction
+        if not direction:
+            self.__direction = [1, 0]
+        else:
+            self.__direction = direction
 
     def __getitem__(self, key):
         return self.__direction[key]

@@ -53,13 +53,13 @@
 			</Resolution>
 		</Micros>
 		<Micros name = "Микроскоп_тест 20к">
-			<Default>Test</Default>
+			<Default></Default>
 			<Resolution>
 				<Width>200</Width>
 				<Height>100</Height>
 			</Resolution>
 			<Mode name = "Default">
-				<Default>True</Default>
+				<Default></Default>
 				<Offset>
 					<Left>0</Left>
 					<Top>0</Top>
