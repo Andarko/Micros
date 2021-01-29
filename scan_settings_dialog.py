@@ -58,6 +58,22 @@ class ProgramSettings(object):
         # if not test:
         self.load_settings_from_xml("scan_settings.xml")
 
+    def set_default_micros(self, micros_settings: MicrosSettings = None):
+        for settings in self.all_micros_settings:
+            settings.default = False
+        if micros_settings:
+            micros_settings.default = True
+        else:
+            self.micros_settings = True
+
+    def set_default_snap(self, snap_settings: SnapSettings = None):
+        for settings in self.micros_settings.all_snap_settings:
+            settings.default = False
+        if snap_settings:
+            snap_settings.default = True
+        else:
+            self.snap_settings = True
+
     # Загрузка настроек из файла
     def load_settings_from_xml(self, file_name, test=False):
         with open(file_name) as fileObj:
@@ -289,9 +305,10 @@ class SettingsDialog(QDialog):
     # Загрузка настроек камеры
     def load_all_modes_to_ui(self, micros_settings: MicrosSettings):
         if self.program_settings.micros_settings:
-            self.program_settings.micros_settings.default = False
+            # self.program_settings.micros_settings.default = False
             self.program_settings.micros_settings = micros_settings
-            self.program_settings.micros_settings.default = True
+            # self.program_settings.micros_settings.default = True
+            self.program_settings.set_default_micros()
 
         self.edt_res_width.setValue(micros_settings.resolution.width())
         self.edt_res_height.setValue(micros_settings.resolution.height())
@@ -308,12 +325,13 @@ class SettingsDialog(QDialog):
     def load_mode_settings_to_ui(self, snap_settings: SnapSettings):
         if not snap_settings:
             snap_settings = SnapSettings()
-        change_default = snap_settings in self.program_settings.micros_settings.all_snap_settings and\
-                         self.program_settings.snap_settings in self.program_settings.micros_settings.all_snap_settings
-
-        if change_default:
-            self.program_settings.snap_settings.Default = False
-        snap_settings.Default = True
+        # change_default = \
+        #     snap_settings in self.program_settings.micros_settings.all_snap_settings and \
+        #     self.program_settings.snap_settings in self.program_settings.micros_settings.all_snap_settings
+        #
+        # if change_default:
+        #     self.program_settings.snap_settings.default = False
+        # snap_settings.default = True
 
         self.edt_offset_left.setValue(snap_settings.offset[0])
         self.edt_offset_top.setValue(snap_settings.offset[1])
@@ -325,6 +343,7 @@ class SettingsDialog(QDialog):
         self.edt_zoom.setText(snap_settings.zoom)
 
         self.program_settings.snap_settings = snap_settings
+        self.program_settings.set_default_snap()
 
     def accept_prop(self):
         # print("ok")
@@ -332,17 +351,20 @@ class SettingsDialog(QDialog):
 
     def combo_micros_changed(self):
         print("micros: " + self.combo_micros.currentText())
-        self.load_all_modes_to_ui(self.program_settings.all_micros_settings[self.combo_micros.currentIndex()])
+        if self.combo_micros.currentIndex() > -1:
+            self.load_all_modes_to_ui(self.program_settings.all_micros_settings[self.combo_micros.currentIndex()])
 
     def combo_modes_changed(self):
-        if self.combo_modes.currentIndex() >= 0:
+        pass
+        if self.program_settings.micros_settings and self.program_settings.micros_settings.all_snap_settings \
+                and self.combo_modes.currentIndex() > -1:
             self.load_mode_settings_to_ui(self.program_settings.micros_settings.all_snap_settings[
                                               self.combo_modes.currentIndex()])
         else:
             self.load_mode_settings_to_ui(None)
         print("mode: " + self.combo_modes.currentText())
 
-    def btn_micros_add_click(self, default_text = ""):
+    def btn_micros_add_click(self, default_text=""):
         if not default_text:
             default_text = ""
         input_dialog = QInputDialog()
@@ -386,18 +408,28 @@ class SettingsDialog(QDialog):
                                             "Для удаления напишите \"удалить\"", QLineEdit.Normal)
             if ok and str.lower(text) == "удалить":
                 index = self.combo_micros.currentIndex()
-                self.program_settings.all_micros_settings.pop()
-                if len(self.program_settings.all_micros_settings) > 0:
-                    if index == len(self.program_settings.all_micros_settings):
-                        index -= 1
-                self.program_settings.micros_settings = self.program_settings.all_micros_settings[index]
+                self.program_settings.all_micros_settings.pop(index)
+                if index == len(self.program_settings.all_micros_settings):
+                    index -= 1
+                if index > -1:
+                    self.program_settings.micros_settings = self.program_settings.all_micros_settings[index]
+                else:
+                    self.program_settings.micros_settings = MicrosSettings()
                 self.combo_micros.removeItem(self.combo_micros.currentIndex())
 
-    def btn_modes_set_add_click(self):
+    def btn_modes_set_add_click(self, default_text=""):
+        if not default_text:
+            default_text = ""
         input_dialog = QInputDialog()
-        text, ok = input_dialog.getText(self, "Добавление настройки", "Наименование", QLineEdit.Normal)
+        text, ok = input_dialog.getText(self, "Добавление настройки", "Наименование", QLineEdit.Normal, default_text)
 
-        if ok:
+        if ok and text:
+            for snap_settings in self.program_settings.micros_settings.all_snap_settings:
+                if snap_settings.name == text:
+                    QMessageBox.warning(self, "Warning!", "Данное имя уже используется", QMessageBox.Ok, QMessageBox.Ok)
+                    self.btn_modes_set_add_click(text)
+                    return
+            self.program_settings.micros_settings.all_snap_settings.append(SnapSettings(text))
             self.combo_modes.addItem(text)
             self.combo_modes.setCurrentIndex(self.combo_modes.count() - 1)
 
@@ -409,6 +441,7 @@ class SettingsDialog(QDialog):
                                         "Переименование настройки", "Наименование",
                                         QLineEdit.Normal, self.combo_modes.currentText())
         if ok and text:
+            self.program_settings.snap_settings.name = text
             i = self.combo_modes.currentIndex()
             self.combo_modes.removeItem(self.combo_modes.currentIndex())
             self.combo_modes.insertItem(i, text)
@@ -427,4 +460,12 @@ class SettingsDialog(QDialog):
             text, ok = input_dialog.getText(self, "Удаление настройки",
                                             "Для удаления напишите \"удалить\"", QLineEdit.Normal)
             if ok and str.lower(text) == "удалить":
+                index = self.combo_modes.currentIndex()
+                self.program_settings.micros_settings.all_snap_settings.pop(index)
+                if index == len(self.program_settings.micros_settings.all_snap_settings):
+                    index -= 1
+                if index > -1:
+                    self.program_settings.snap_settings = self.program_settings.micros_settings.all_snap_settings[index]
+                else:
+                    self.program_settings.snap_settings = SnapSettings()
                 self.combo_modes.removeItem(self.combo_modes.currentIndex())
