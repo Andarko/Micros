@@ -8,12 +8,6 @@ import xml.etree.ElementTree as Xml
 from lxml import etree
 
 
-class AllSettings(object):
-    def __init__(self):
-        # Список микроскопов и доступных разрешений
-        self.micros_settings = dict()
-
-
 # Классы для хранения текущих выбранных настроек
 # Выбранные настройки микроскопа
 class MicrosSettings(object):
@@ -64,7 +58,7 @@ class ProgramSettings(object):
         if micros_settings:
             micros_settings.default = True
         else:
-            self.micros_settings = True
+            self.micros_settings.default = True
 
     def set_default_snap(self, snap_settings: SnapSettings = None):
         for settings in self.micros_settings.all_snap_settings:
@@ -72,7 +66,7 @@ class ProgramSettings(object):
         if snap_settings:
             snap_settings.default = True
         else:
-            self.snap_settings = True
+            self.snap_settings.default = True
 
     # Загрузка настроек из файла
     def load_settings_from_xml(self, file_name, test=False):
@@ -174,6 +168,9 @@ class SettingsDialog(QDialog):
         # self.btn_ok = QPushButton("OK")
         self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
 
+        self.edits_res_unsaved = False
+        self.edits_mode_unsaved = False
+
         self.init_ui()
 
     # Создание элементов формы
@@ -220,11 +217,13 @@ class SettingsDialog(QDialog):
         layout_resolution.addWidget(QLabel("Ширина"))
         self.edt_res_width.setValue(1024)
         self.edt_res_width.setMinimum(20)
+        self.edt_res_width.editingFinished.connect(self.edits_res_changed)
 
         layout_resolution.addWidget(self.edt_res_width)
         layout_resolution.addWidget(QLabel("Высота"))
         self.edt_res_height.setValue(768)
         self.edt_res_height.setMinimum(10)
+        self.edt_res_height.editingFinished.connect(self.edits_res_changed)
         layout_resolution.addWidget(self.edt_res_height)
         layout_main.addLayout(layout_resolution)
 
@@ -250,9 +249,13 @@ class SettingsDialog(QDialog):
 
         layout_offset = QFormLayout()
         layout_offset.addRow(QLabel("Размер отступа слева"), self.edt_offset_left)
+        self.edt_offset_left.valueChanged.connect(self.edits_mode_changed)
         layout_offset.addRow(QLabel("Размер отступа справа"), self.edt_offset_right)
+        self.edt_offset_right.valueChanged.connect(self.edits_mode_changed)
         layout_offset.addRow(QLabel("Размер отступа сверху"), self.edt_offset_top)
+        self.edt_offset_top.valueChanged.connect(self.edits_mode_changed)
         layout_offset.addRow(QLabel("Размер отступа снизу"), self.edt_offset_bottom)
+        self.edt_offset_bottom.valueChanged.connect(self.edits_mode_changed)
 
         self.edt_pixels_in_mm.setButtonSymbols(QAbstractSpinBox.NoButtons)
         self.edt_pixels_in_mm.setSingleStep(0)
@@ -261,6 +264,7 @@ class SettingsDialog(QDialog):
         self.edt_pixels_in_mm.setValue(1.0)
         self.edt_pixels_in_mm.setSingleStep(0.0)
         self.edt_pixels_in_mm.setDecimals(3)
+        self.edt_pixels_in_mm.valueChanged.connect(self.edits_mode_changed)
         layout_offset.addRow(QLabel("Пикселей на мм"), self.edt_pixels_in_mm)
         self.edt_work_height.setButtonSymbols(QAbstractSpinBox.NoButtons)
         self.edt_work_height.setSingleStep(0)
@@ -269,9 +273,12 @@ class SettingsDialog(QDialog):
         self.edt_work_height.setValue(1.0)
         self.edt_work_height.setSingleStep(0.0)
         self.edt_work_height.setDecimals(3)
+        self.edt_work_height.valueChanged.connect(self.edits_mode_changed)
         layout_offset.addRow(QLabel("Высота работы камеры, мм"), self.edt_work_height)
         layout_offset.addRow(QLabel("Фокус"), self.edt_focus)
+        self.edt_focus.textChanged.connect(self.edits_mode_changed)
         layout_offset.addRow(QLabel("Увеличение"), self.edt_zoom)
+        self.edt_zoom.textChanged.connect(self.edits_mode_changed)
 
         layout_main.addLayout(layout_offset)
 
@@ -286,6 +293,32 @@ class SettingsDialog(QDialog):
         self.load_all_micros_to_ui()
 
         self.combo_micros.currentIndexChanged.connect(self.combo_micros_changed)
+
+    def closeEvent(self, event):
+        self.edits_res_save()
+        self.edits_mode_save()
+
+    def edits_res_changed(self):
+        self.edits_res_unsaved = True
+
+    def edits_mode_changed(self):
+        self.edits_mode_unsaved = True
+
+    def edits_res_save(self):
+        if self.edits_res_unsaved:
+            self.program_settings.micros_settings.resolution.setWidth(self.edt_res_width.value())
+            self.program_settings.micros_settings.resolution.setHeight(self.edt_res_height.value())
+
+    def edits_mode_save(self):
+        if self.edits_mode_unsaved:
+            self.program_settings.snap_settings.offset[0] = self.edt_offset_left.value()
+            self.program_settings.snap_settings.offset[1] = self.edt_offset_top.value()
+            self.program_settings.snap_settings.offset[2] = self.edt_offset_right.value()
+            self.program_settings.snap_settings.offset[3] = self.edt_offset_bottom.value()
+            self.program_settings.snap_settings.pixels_in_mm = self.edt_pixels_in_mm.value()
+            self.program_settings.snap_settings.work_height = self.edt_work_height.value()
+            self.program_settings.snap_settings.focus = self.edt_focus.text()
+            self.program_settings.snap_settings.zoom = self.edt_zoom.text()
 
     # Загрука списка камер
     def load_all_micros_to_ui(self):
@@ -305,6 +338,8 @@ class SettingsDialog(QDialog):
     # Загрузка настроек камеры
     def load_all_modes_to_ui(self, micros_settings: MicrosSettings):
         if self.program_settings.micros_settings:
+            # Запись измененных настроек предыдущего микроскопа
+            self.edits_res_save()
             # self.program_settings.micros_settings.default = False
             self.program_settings.micros_settings = micros_settings
             # self.program_settings.micros_settings.default = True
@@ -321,6 +356,7 @@ class SettingsDialog(QDialog):
             if mode.default:
                 self.combo_modes.setCurrentIndex(i)
                 self.load_mode_settings_to_ui(self.program_settings.snap_settings)
+        self.edits_res_unsaved = False
 
     def load_mode_settings_to_ui(self, snap_settings: SnapSettings):
         if not snap_settings:
@@ -332,7 +368,9 @@ class SettingsDialog(QDialog):
         # if change_default:
         #     self.program_settings.snap_settings.default = False
         # snap_settings.default = True
-
+        # Запись данных по настройке
+        if self.program_settings.snap_settings:
+            self.edits_mode_save()
         self.edt_offset_left.setValue(snap_settings.offset[0])
         self.edt_offset_top.setValue(snap_settings.offset[1])
         self.edt_offset_right.setValue(snap_settings.offset[2])
@@ -344,6 +382,7 @@ class SettingsDialog(QDialog):
 
         self.program_settings.snap_settings = snap_settings
         self.program_settings.set_default_snap()
+        self.edits_mode_unsaved = False
 
     def accept_prop(self):
         # print("ok")
@@ -355,7 +394,6 @@ class SettingsDialog(QDialog):
             self.load_all_modes_to_ui(self.program_settings.all_micros_settings[self.combo_micros.currentIndex()])
 
     def combo_modes_changed(self):
-        pass
         if self.program_settings.micros_settings and self.program_settings.micros_settings.all_snap_settings \
                 and self.combo_modes.currentIndex() > -1:
             self.load_mode_settings_to_ui(self.program_settings.micros_settings.all_snap_settings[
