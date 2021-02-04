@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QDialog, QComboBox, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QInputDialog, \
     QLineEdit, QMessageBox, QFormLayout, QDoubleSpinBox, QSpinBox, QAbstractSpinBox, QDialogButtonBox
 from PyQt5.QtCore import Qt, QSize, QRect
-import xml.etree.ElementTree as Xml
+import xml.etree.ElementTree as XmlET
 
 
 # Класс для хранения всех настроек камер. Он может загружаться из файла и сохраняться в файл
@@ -49,11 +49,14 @@ class ProgramSettings(object):
         self.snap_settings: SnapSettings = None
         self.table_settings = TableSettings()
         self.test = test
+        self.file_unsaved = False
         # if not test:
         self.load_settings_from_xml("scan_settings.xml")
 
     def set_default_micros(self, micros_settings: MicrosSettings = None):
         for settings in self.all_micros_settings:
+            if micros_settings and settings != micros_settings and settings.default:
+                self.file_unsaved = True
             settings.default = False
         if micros_settings:
             micros_settings.default = True
@@ -62,14 +65,78 @@ class ProgramSettings(object):
 
     def set_default_snap(self, snap_settings: SnapSettings = None):
         for settings in self.micros_settings.all_snap_settings:
+            # if snap_settings and settings != snap_settings and settings.default:
+            #     self.file_unsaved = True
             settings.default = False
         if snap_settings:
             snap_settings.default = True
         else:
             self.snap_settings.default = True
 
+    # Сохранение настроек в файл
+    def save_settings_from_xml(self, file_name):
+        # if self.test:
+        #     return
+        print("Save To File")
+        root = XmlET.Element("Settings")
+
+        element_table = XmlET.Element("Table")
+        root.append(element_table)
+        obj_steps = XmlET.SubElement(element_table, "StepsInMM")
+        obj_steps.text = str(self.table_settings.steps_in_mm)
+        obj_limits = XmlET.SubElement(element_table, "LimitsMM")
+        obj_x = XmlET.SubElement(obj_limits, "X")
+        obj_x.text = str(self.table_settings.limits_mm[0])
+        obj_y = XmlET.SubElement(obj_limits, "Y")
+        obj_y.text = str(self.table_settings.limits_mm[1])
+        obj_z = XmlET.SubElement(obj_limits, "Z")
+        obj_z.text = str(self.table_settings.limits_mm[2])
+
+        element_micros = XmlET.Element("AllMicros")
+        root.append(element_micros)
+        for micros in self.all_micros_settings:
+            obj_micros = XmlET.SubElement(element_micros, "Micros")
+            obj_micros.set("name", micros.name)
+            obj_default = XmlET.SubElement(obj_micros, "Default")
+            obj_default.text = str(micros.default)
+            obj_res = XmlET.SubElement(obj_micros, "Resolution")
+            obj_res_w = XmlET.SubElement(obj_res, "Width")
+            obj_res_w.text = str(micros.resolution.width())
+            obj_res_h = XmlET.SubElement(obj_res, "Height")
+            obj_res_h.text = str(micros.resolution.height())
+            for mode in micros.all_snap_settings:
+                obj_mode = XmlET.SubElement(obj_micros, "Mode")
+                obj_mode.set("name", mode.name)
+                obj_mode_default = XmlET.SubElement(obj_mode, "Default")
+                obj_mode_default.text = str(mode.default)
+                obj_mode_of = XmlET.SubElement(obj_mode, "Offset")
+                obj_mode_of_left = XmlET.SubElement(obj_mode_of, "Left")
+                obj_mode_of_left.text = str(mode.offset[0])
+                obj_mode_of_top = XmlET.SubElement(obj_mode_of, "Top")
+                obj_mode_of_top.text = str(mode.offset[1])
+                obj_mode_of_right = XmlET.SubElement(obj_mode_of, "Right")
+                obj_mode_of_right.text = str(mode.offset[2])
+                obj_mode_of_bottom = XmlET.SubElement(obj_mode_of, "Bottom")
+                obj_mode_of_bottom.text = str(mode.offset[3])
+                obj_mode_pixels = XmlET.SubElement(obj_mode, "PixelsInMM")
+                obj_mode_pixels.text = str(mode.pixels_in_mm)
+                obj_mode_work_height = XmlET.SubElement(obj_mode, "WorkHeightMM")
+                obj_mode_work_height.text = str(mode.work_height)
+                obj_mode_focus = XmlET.SubElement(obj_mode, "Focus")
+                obj_mode_focus.text = str(mode.focus)
+                obj_mode_zoom = XmlET.SubElement(obj_mode, "Zoom")
+                obj_mode_zoom.text = str(mode.zoom)
+            obj_micros.set("name", micros.name)
+
+        root.append(element_table)
+
+        tree = XmlET.ElementTree(root)
+        with open(file_name, "w"):
+            tree.write(file_name)
+
     # Загрузка настроек из файла
-    def load_settings_from_xml(self, file_name, test=False):
+    def load_settings_from_xml(self, file_name):
+        print("Load From File")
         with open(file_name) as fileObj:
             xml = fileObj.read()
         root = etree.fromstring(xml)
@@ -170,6 +237,8 @@ class SettingsDialog(QDialog):
 
         self.edits_res_unsaved = False
         self.edits_mode_unsaved = False
+        self.file_unsaved = False
+        self.combo_changes = False
 
         self.init_ui()
 
@@ -295,19 +364,41 @@ class SettingsDialog(QDialog):
         self.combo_micros.currentIndexChanged.connect(self.combo_micros_changed)
 
     def closeEvent(self, event):
+        print("Close Event, unsaved=" + str(self.file_unsaved))
+        # if self.file_unsaved:
+        dlg_result = QMessageBox.question(self,
+                                          "Confirm Dialog",
+                                          "Настройки были изменены, хотите их сохранить?",
+                                          QMessageBox.Yes | QMessageBox.No,
+                                          QMessageBox.Yes)
+        if dlg_result == QMessageBox.Yes:
+            self.accept()
+
+    def accept_prop(self):
+        print("Accept Dialog")
         self.edits_res_save()
         self.edits_mode_save()
+        # if self.file_unsaved:
+        self.program_settings.save_settings_from_xml("scan_settings.xml")
+        self.file_unsaved = False
+        super().accept()
 
     def edits_res_changed(self):
         self.edits_res_unsaved = True
+        self.file_unsaved = True
+        print("Resolution Params Change")
 
     def edits_mode_changed(self):
-        self.edits_mode_unsaved = True
+        if not self.combo_changes:
+            self.edits_mode_unsaved = True
+            self.file_unsaved = True
+            print("Mode Params Change")
 
     def edits_res_save(self):
         if self.edits_res_unsaved:
             self.program_settings.micros_settings.resolution.setWidth(self.edt_res_width.value())
             self.program_settings.micros_settings.resolution.setHeight(self.edt_res_height.value())
+            print("Resolution Params Save")
 
     def edits_mode_save(self):
         if self.edits_mode_unsaved:
@@ -319,6 +410,7 @@ class SettingsDialog(QDialog):
             self.program_settings.snap_settings.work_height = self.edt_work_height.value()
             self.program_settings.snap_settings.focus = self.edt_focus.text()
             self.program_settings.snap_settings.zoom = self.edt_zoom.text()
+            print("Mode Params Save")
 
     # Загрука списка камер
     def load_all_micros_to_ui(self):
@@ -337,13 +429,14 @@ class SettingsDialog(QDialog):
 
     # Загрузка настроек камеры
     def load_all_modes_to_ui(self, micros_settings: MicrosSettings):
+        # self.combo_changes = True
         if self.program_settings.micros_settings:
             # Запись измененных настроек предыдущего микроскопа
             self.edits_res_save()
-            # self.program_settings.micros_settings.default = False
-            self.program_settings.micros_settings = micros_settings
-            # self.program_settings.micros_settings.default = True
-            self.program_settings.set_default_micros()
+        # self.program_settings.micros_settings.default = False
+        self.program_settings.micros_settings = micros_settings
+        # self.program_settings.micros_settings.default = True
+        self.program_settings.set_default_micros()
 
         self.edt_res_width.setValue(micros_settings.resolution.width())
         self.edt_res_height.setValue(micros_settings.resolution.height())
@@ -357,6 +450,7 @@ class SettingsDialog(QDialog):
                 self.combo_modes.setCurrentIndex(i)
                 self.load_mode_settings_to_ui(self.program_settings.snap_settings)
         self.edits_res_unsaved = False
+        # self.combo_changes = False
 
     def load_mode_settings_to_ui(self, snap_settings: SnapSettings):
         if not snap_settings:
@@ -371,6 +465,7 @@ class SettingsDialog(QDialog):
         # Запись данных по настройке
         if self.program_settings.snap_settings:
             self.edits_mode_save()
+        self.combo_changes = True
         self.edt_offset_left.setValue(snap_settings.offset[0])
         self.edt_offset_top.setValue(snap_settings.offset[1])
         self.edt_offset_right.setValue(snap_settings.offset[2])
@@ -383,13 +478,10 @@ class SettingsDialog(QDialog):
         self.program_settings.snap_settings = snap_settings
         self.program_settings.set_default_snap()
         self.edits_mode_unsaved = False
-
-    def accept_prop(self):
-        # print("ok")
-        super().accept()
+        self.combo_changes = False
 
     def combo_micros_changed(self):
-        print("micros: " + self.combo_micros.currentText())
+        # print("micros: " + self.combo_micros.currentText())
         if self.combo_micros.currentIndex() > -1:
             self.load_all_modes_to_ui(self.program_settings.all_micros_settings[self.combo_micros.currentIndex()])
 
@@ -400,7 +492,7 @@ class SettingsDialog(QDialog):
                                               self.combo_modes.currentIndex()])
         else:
             self.load_mode_settings_to_ui(None)
-        print("mode: " + self.combo_modes.currentText())
+        # print("mode: " + self.combo_modes.currentText())
 
     def btn_micros_add_click(self, default_text=""):
         if not default_text:

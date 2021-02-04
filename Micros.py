@@ -18,7 +18,7 @@ from PyQt5.QtCore import Qt, QSize, QEvent, QPoint
 from lxml import etree
 
 from SettingsDialog import SettingsDialog, ProgramSettings
-import xml.etree.ElementTree as Xml
+import xml.etree.ElementTree as XmlET
 import scan
 # import ScanWindow from scan
 
@@ -177,34 +177,34 @@ class SavedData(object):
     def save_to_file_xml(self, xml_file):
         # noinspection PyBroadException
         try:
-            root = Xml.Element("Root")
-            app_rc = Xml.Element("RowCount")
+            root = XmlET.Element("Root")
+            app_rc = XmlET.Element("RowCount")
             app_rc.text = str(self.rowCount)
             root.append(app_rc)
-            app_cc = Xml.Element("ColCount")
+            app_cc = XmlET.Element("ColCount")
             app_cc.text = str(self.colCount)
             root.append(app_cc)
-            app_i = Xml.Element("Image")
+            app_i = XmlET.Element("Image")
             root.append(app_i)
-            form = Xml.SubElement(app_i, "Format")
+            form = XmlET.SubElement(app_i, "Format")
             form.text = self.format
             # isAllImageInMemory = xml.SubElement(app_i, "AllImageInMemory")
             # isAllImageInMemory.text = str(self.allImageInMemory)
-            img_size = Xml.SubElement(app_i, "ImgSize")
-            is_width = Xml.SubElement(img_size, "Width")
+            img_size = XmlET.SubElement(app_i, "ImgSize")
+            is_width = XmlET.SubElement(img_size, "Width")
             is_width.text = str(self.imgSize.width)
-            is_height = Xml.SubElement(img_size, "Height")
+            is_height = XmlET.SubElement(img_size, "Height")
             is_height.text = str(self.imgSize.height)
-            con_area = Xml.SubElement(app_i, "ConnectionArea")
-            ca_x = Xml.SubElement(con_area, "X")
+            con_area = XmlET.SubElement(app_i, "ConnectionArea")
+            ca_x = XmlET.SubElement(con_area, "X")
             ca_x.text = str(self.connectionArea.x)
-            ca_y = Xml.SubElement(con_area, "Y")
+            ca_y = XmlET.SubElement(con_area, "Y")
             ca_y.text = str(self.connectionArea.y)
-            ca_width = Xml.SubElement(con_area, "Width")
+            ca_width = XmlET.SubElement(con_area, "Width")
             ca_width.text = str(self.connectionArea.width)
-            ca_height = Xml.SubElement(con_area, "Height")
+            ca_height = XmlET.SubElement(con_area, "Height")
             ca_height.text = str(self.connectionArea.height)
-            tree = Xml.ElementTree(root)
+            tree = XmlET.ElementTree(root)
             with open(xml_file, "w") as f_obj:
                 tree.write(xml_file)
             return True
@@ -837,11 +837,11 @@ class MainWindow(QMainWindow):
         self.show()
 
     def save_config(self):
-        root = Xml.Element("Root")
-        apptRC = Xml.Element("FullLoadImageMemoryLimit")
+        root = XmlET.Element("Root")
+        apptRC = XmlET.Element("FullLoadImageMemoryLimit")
         apptRC.text = "1024*1024*1024"
         root.append(apptRC)
-        tree = Xml.ElementTree(root)
+        tree = XmlET.ElementTree(root)
         with open(self.configFilePath, "w") as fobj:
             tree.write(self.configFilePath)
 

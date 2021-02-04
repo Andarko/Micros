@@ -38,7 +38,7 @@ class ScanWindow(QMainWindow):
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
-        test = True
+        test = False
         self.table_controller = TableController(self.loop, test)
         # TEST Для удобства тестирования передаю в контроллер стола контроллер камеры
         self.micros_controller = MicrosController(self.table_controller.test)
@@ -698,7 +698,7 @@ class ScanWindow(QMainWindow):
             for i in x_range:
                 x = coord[0] + i * self.frame_width_mm
                 snap = self.coord_move([x, y, self.work_height], mode="discrete")
-                cv2.imwrite(os.path.join(self.dir_for_img, "S_{0}_{1}.jpg".format(j_r + 1, i + 1)), snap[:, :, ::-1])
+                cv2.imwrite(os.path.join(self.dir_for_img, "S_{0}_{1}.jpg".format(j_r + 1, i + 1)), snap[:, :, :])
                 print('x = ' + str(x) + '; y = ' + str(y))
 
             left_dir = not left_dir
@@ -894,7 +894,7 @@ class MicrosController:
         self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_3.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
-        self.test_img = cv2.imread(self.test_img_path)[:, :, ::-1]
+        self.test_img = cv2.imread(self.test_img_path)[:, :, :]
         self.test = test
         self.frame = list()
 
@@ -908,13 +908,21 @@ class MicrosController:
                 if video_stream_index > max_video_streams:
                     video_stream_index = 0
 
-                self.video_stream = VideoStream(src=video_stream_index).start()
+                # self.video_stream = VideoStream(src=video_stream_index).start()
+                # self.video_stream = VideoStream(src=video_stream_index, usePiCamera=True,
+                #                                 resolution=(1920, 1080)).start()
+                self.video_stream = cv2.VideoCapture(video_stream_index)
+                self.video_stream.set(3, 1920)
+                self.video_stream.set(4, 1080)
+
                 try:
-                    check_read = self.video_stream.read()
-                    check_frame = check_read[:, :, ::-1]
+                    check_read, img = self.video_stream.read()
+                    if not check_read:
+                        continue
+                    check_frame = img[:, :, :]
                     check_next_stream = False
                 except:
-                    self.video_stream.stop()
+                    # self.video_stream.stop()
                     check_next_stream = True
 
     @staticmethod
@@ -934,14 +942,16 @@ class MicrosController:
                     height, width, channels = image.shape
                     bytes_per_line = channels * width
                     q_img = QImage(
-                        image.data, width, height, bytes_per_line, QImage.Format_RGB888
+                        # image.data, width, height, bytes_per_line, QImage.Format_RGB888
+                        image.data, width, height, bytes_per_line, QImage.Format_BGR888
                     )
                 elif image.shape[2] == 4:
                     height, width, channels = image.shape
                     bytes_per_line = channels * width
                     # fmt = QImage.Format_ARGB32
                     q_img = QImage(
-                        image.data, width, height, bytes_per_line, QImage.Format_ARGB32
+                        # image.data, width, height, bytes_per_line, QImage.Format_ARGB32
+                        image.data, width, height, bytes_per_line, QImage.Format_BGR888
                     )
         return q_img
 
@@ -959,11 +969,14 @@ class MicrosController:
             y1_r = 6400 - y2
             return np.copy(self.test_img[y1_r:y2_r, x1:x2, :])
         else:
-            time.sleep(0.05)
+            time.sleep(0.1)
+            for i in range(10):
+                self.video_stream.read()
+            check, img = self.video_stream.read()
             if crop:
-                return np.copy(self.video_stream.read()[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :])
+                return np.copy(img[self.frame[3]:self.frame[1]:-1, self.frame[2]:self.frame[0]:-1, :])
             else:
-                return np.copy(self.video_stream.read())
+                return np.copy(img[::-1, ::-1, :])
 
 
 # Класс, который общается с контроллером станка

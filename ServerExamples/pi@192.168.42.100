@@ -1,0 +1,487 @@
+#!/usr/bin/env python
+# import aiohttp.web_server as web
+import asyncio
+import logging
+import websockets
+import json
+import time
+# import RPi.GPIO as GPIO
+from websockets import WebSocketServerProtocol 
+from threading import Thread
+
+
+logging.basicConfig(level=logging.INFO)
+
+
+class Server:
+    clients = set()
+
+    def __init__(self):
+        self.limit_signals_count = 80
+        self.status = "uninited"
+        self.coordX = -1
+        self.coordY = -1
+        self.coordZ = -1
+        self.limitX = 340 * 80
+        self.limitY = 640 * 80
+        self.limitZ = 90 * 80
+
+    async def register(self,ws:WebSocketServerProtocol)->None:
+        self.clients.add(ws)
+        logging.info(f'{ws.remote_address} connects.')
+    
+    async def unregister(self,ws:WebSocketServerProtocol)->None:
+        self.clients.remove(ws)
+        logging.info(f'{ws.remote_address} disconnects.')
+
+    async def send_to_clients(self,message:str)->None:
+        if self.clients:
+            await asyncio.wait([client.send(message) for client in self.clients])
+
+    async def ws_handler(self,ws:WebSocketServerProtocol,url:str)->None:
+        await self.register(ws)
+        try:
+            await self.distribute(ws)
+        finally:
+            await self.unregister(ws)
+    
+    async def distribute(self,ws:WebSocketServerProtocol) -> None:
+        print(ws)
+        async for message in ws:
+            request = json.loads(message)
+            if(request["mode"] == "init"):
+                response = await self.init()
+                print(response)
+                await self.send_to_clients(response)    
+            elif(request["mode"] == "discret"):
+
+                response = await self.move_xyz(request)
+
+                await self.send_to_clients(response)
+            elif(request["mode"]=="check"):
+                response = await self.check()
+                await self.send_to_clients(response) 
+            else:
+                response = await self.move_xyz(request)
+                await self.send_to_clients(response)  
+
+    
+    async def getdir(self,coord):
+        if(coord<0):
+            direction = "b"
+        else:
+            direction = "f"
+        return direction
+
+    async def move_y(self,distance:int,direction:str):
+        y = self.coordY + distance
+        if(self.status == "error"):
+            err_response = await self.getjson(self.coordX,self.coordY,self.coordZ,"err_server")
+            return err_response
+
+        if(self.status == "inited"):
+            if(y < 0 or y > self.limitY):
+                err_response = await self.getjson(self.coordX,self.coordY,self.coordZ,"err_coord")
+                return err_response
+        
+        STEPPLUS = 15
+        STEPMINUS = 16
+        DIRPLUS = 18
+        DIRMINUS = 19
+        ENBPLUS = 21
+        ENBMINUS = 22
+
+        YSENSOR = 37
+        
+        # GPIO.setmode(GPIO.BOARD)
+        #
+        # GPIO.setup(STEPPLUS,GPIO.OUT)
+        # GPIO.setup(STEPMINUS,GPIO.OUT)
+        # GPIO.setup(DIRPLUS,GPIO.OUT)
+        # GPIO.setup(DIRMINUS,GPIO.OUT)
+        # GPIO.setup(ENBPLUS,GPIO.OUT)
+        # GPIO.setup(ENBMINUS,GPIO.OUT)
+        #
+        # GPIO.setup(YSENSOR,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+
+        try:
+            # GPIO.output(ENBMINUS,GPIO.LOW)
+            # GPIO.output(STEPMINUS,GPIO.LOW)
+            # GPIO.output(DIRMINUS,GPIO.LOW)
+            #
+            # GPIO.output(ENBPLUS,GPIO.LOW)
+            # if direction == "f":
+            #     GPIO.output(DIRPLUS,GPIO.LOW)
+            # elif direction == "b":
+            #     GPIO.output(DIRPLUS,GPIO.HIGH)
+
+            delay = 0.00001
+            step_per_mm = 160
+            
+            count_of_signals = 0
+
+            for i in range(distance):
+                # GPIO.output(STEPPLUS,GPIO.HIGH)
+                time.sleep(delay)
+                # GPIO.output(STEPPLUS,GPIO.LOW)
+                time.sleep(delay)
+                # signal = GPIO.input(YSENSOR)
+                signal = 1
+                if(direction == "b"):
+                    if(count_of_signals<self.limit_signals_count):
+                        if(signal == 0):
+                            count_of_signals += 1
+                        else:
+                            count_of_signals = 0
+                    else:
+                        print("error breaking")
+                        break
+
+            print("set GPIO high")
+
+        except KeyboardInterrupt:
+            print("Keyboard interrupt")
+        except:
+            print("some error") 
+        finally:
+            print("clean up") 
+            # GPIO.cleanup()
+        self.coordY = y   
+        response = await self.getjson(self.coordX,self.coordY,self.coordZ,self.status)
+        return response
+
+    async def move_x(self,distance:int,direction:str):
+                
+        x = self.coordX + distance
+        if(self.status == "error"):
+            err_response = await self.getjson(self.coordX,self.coordY,self.coordZ,"err_server")
+            return err_response
+        
+        if(self.status == "inited"):
+            if(x < 0 or x > self.limitX):
+                err_response = await self.getjson(self.coordX,self.coordY,self.coordZ,"err_coord")
+                return err_response
+
+        STEPPLUS = 7
+        STEPMINUS = 8
+        DIRPLUS = 10
+        DIRMINUS = 12
+        ENBPLUS = 11
+        ENBMINUS = 13
+
+        XSENSOR = 36
+
+        # GPIO.setmode(GPIO.BOARD)
+        #
+        # GPIO.setup(STEPPLUS,GPIO.OUT)
+        # GPIO.setup(STEPMINUS,GPIO.OUT)
+        # GPIO.setup(DIRPLUS,GPIO.OUT)
+        # GPIO.setup(DIRMINUS,GPIO.OUT)
+        # GPIO.setup(ENBPLUS,GPIO.OUT)
+        # GPIO.setup(ENBMINUS,GPIO.OUT)
+        # GPIO.setup(XSENSOR,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+
+        try:
+            # GPIO.output(ENBMINUS,GPIO.LOW)
+            # GPIO.output(STEPMINUS,GPIO.LOW)
+            # GPIO.output(DIRMINUS,GPIO.LOW)
+            #
+            # GPIO.output(ENBPLUS,GPIO.LOW)
+            # if direction == "b":
+            #     GPIO.output(DIRPLUS,GPIO.LOW)
+            # elif direction == "f":
+            #     GPIO.output(DIRPLUS,GPIO.HIGH)
+            
+            delay = 0.00001
+                
+            count_of_signals = 0
+
+            for i in range(distance):
+                # GPIO.output(STEPPLUS,GPIO.HIGH)
+                time.sleep(delay)
+                # GPIO.output(STEPPLUS,GPIO.LOW)
+                time.sleep(delay)
+                # signal = GPIO.input(XSENSOR)
+                signal = 1
+                if(direction == "b"):
+                    if(count_of_signals<self.limit_signals_count):
+                        if(signal == 0):
+                            count_of_signals += 1
+                        else:
+                            count_of_signals = 0
+                    else:
+                        print("error breaking")
+                        break
+            
+            print("set GPIO high")
+
+        except KeyboardInterrupt:
+            print("Keyboard interrupt")
+        except:
+            print("some error") 
+        finally:
+            print("clean up") 
+            # GPIO.cleanup()
+        
+        self.coordX = x   
+        response = await self.getjson(self.coordX,self.coordY,self.coordZ,self.status)
+        return response
+
+    async def move_z(self,distance:int,direction:str):
+
+        z = self.coordZ + distance
+
+        if(self.status == "error"):
+            err_response = await self.getjson(self.coordX,self.coordY,self.coordZ,"err_server")
+            return err_response
+        if(self.status == "inited"):
+            if(z < 0 or z > self.limitZ):
+                err_response = await self.getjson(self.coordX,self.coordY,self.coordZ,"err_coord")
+                return err_response
+
+        STEPPLUS = 23
+        STEPMINUS = 24
+        DIRPLUS = 26
+        DIRMINUS = 29
+        ENBPLUS = 31
+        ENBMINUS = 32
+
+        ZSENSOR = 38
+        
+        # GPIO.setmode(GPIO.BOARD)
+        #
+        # GPIO.setup(STEPPLUS,GPIO.OUT)
+        # GPIO.setup(STEPMINUS,GPIO.OUT)
+        # GPIO.setup(DIRPLUS,GPIO.OUT)
+        # GPIO.setup(DIRMINUS,GPIO.OUT)
+        # GPIO.setup(ENBPLUS,GPIO.OUT)
+        # GPIO.setup(ENBMINUS,GPIO.OUT)
+        #
+        # GPIO.setup(ZSENSOR,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+
+        try:
+            # GPIO.output(ENBMINUS,GPIO.LOW)
+            # GPIO.output(STEPMINUS,GPIO.LOW)
+            # GPIO.output(DIRMINUS,GPIO.LOW)
+            #
+            # GPIO.output(ENBPLUS,GPIO.LOW)
+            # if direction == "f":
+            #     GPIO.output(DIRPLUS,GPIO.LOW)
+            # elif direction == "b":
+            #     GPIO.output(DIRPLUS,GPIO.HIGH)
+
+            delay = 0.00001
+            
+            count_of_signals = 0
+
+            for i in range(distance):
+                # GPIO.output(STEPPLUS,GPIO.HIGH)
+                time.sleep(delay)
+                # GPIO.output(STEPPLUS,GPIO.LOW)
+                time.sleep(delay)
+                # signal = GPIO.input(ZSENSOR)
+                signal = 1
+                if(direction == "b"):
+                    if(count_of_signals<self.limit_signals_count):
+                        if(signal == 0):
+                            count_of_signals += 1
+                        else:
+                            count_of_signals = 0
+                    else:
+                        print("error breaking")
+                        break
+            print("set GPIO high")
+        except KeyboardInterrupt:
+            print("Keyboard interrupt")
+        except:
+            print("some error") 
+        finally:
+            print("clean up") 
+            # GPIO.cleanup()
+        
+        self.coordZ = z   
+        response = await self.getjson(self.coordX,self.coordY,self.coordZ,self.status)
+        return response
+
+    async def move_xyz(self,json_obj):
+
+        x = self.coordX + json_obj["x"]
+        y = self.coordY + json_obj["y"]
+        z = self.coordZ + json_obj["z"]
+        xyz = [x, y, z]
+
+        if(self.status == "error"):
+            err_response = await self.getjson(self.coordX,self.coordY,self.coordZ,"err_server")
+            return err_response
+
+        if(self.status == "inited"):
+            if(x < 0 or x > self.limitX or y < 0 or y > self.limitY or z < 0 or z > self.limitZ):
+                err_response = await self.getjson(self.coordX,self.coordY,self.coordZ,"err_coord")
+                return err_response
+
+
+        STEPPLUS = [7,15,23]
+        STEPMINUS = [8,16,24]
+        DIRPLUS = [10,18,26]
+        DIRMINUS = [12,19,29]
+        ENBPLUS = [11,21,31]
+        ENBMINUS = [13,22,32]
+
+        SENSOR = [36,37,38]
+
+
+        # GPIO.setmode(GPIO.BOARD)
+        
+        # for i in range(3):
+        #     GPIO.setup(STEPPLUS[i],GPIO.OUT)
+        #     GPIO.setup(STEPMINUS[i],GPIO.OUT)
+        #     GPIO.setup(DIRPLUS[i],GPIO.OUT)
+        #     GPIO.setup(DIRMINUS[i],GPIO.OUT)
+        #     GPIO.setup(ENBPLUS[i],GPIO.OUT)
+        #     GPIO.setup(ENBMINUS[i],GPIO.OUT)
+        #     GPIO.setup(SENSOR[i],GPIO.IN,pull_up_down=GPIO.PUD_UP)
+
+        try:
+            # for i in range(3):
+            #     GPIO.output(ENBMINUS[i],GPIO.LOW)
+            #     GPIO.output(STEPMINUS[i],GPIO.LOW)
+            #     GPIO.output(DIRMINUS[i],GPIO.LOW)
+            #
+            # GPIO.output(ENBPLUS,GPIO.LOW)
+            directions = [await self.getdir(json_obj["x"]), await self.getdir(json_obj["y"]), await self.getdir(json_obj["z"])]
+
+            # if directions[0] == "b":
+            #     GPIO.output(DIRPLUS[0],GPIO.LOW)
+            # elif directions[0] == "f":
+            #     GPIO.output(DIRPLUS[0],GPIO.HIGH)
+            # if directions[1] == "f":
+            #     GPIO.output(DIRPLUS[1],GPIO.LOW)
+            # elif directions[1] == "b":
+            #     GPIO.output(DIRPLUS[1],GPIO.HIGH)
+            # if directions[2] == "f":
+            #     GPIO.output(DIRPLUS[2],GPIO.LOW)
+            # elif directions[2] == "b":
+            #     GPIO.output(DIRPLUS[2],GPIO.HIGH)
+            
+            steps=[abs(json_obj["x"]) * 2, abs(json_obj["y"]) * 2, abs(json_obj["z"]) * 2]
+            delay = 50 / 1000 / 1000
+
+            count_of_signals = [0, 0, 0]
+
+            # steps = [milimeters[0], milimeters[1], milimeters[2]]
+            max_steeps = max(steps)
+            
+
+            for i in range(max_steeps):
+                # включаем сигнал step по тем осям, которые надо двигать
+                # for j in range (3):
+                #     if steps[j] > 0:
+                #         GPIO.output(STEPPLUS[j],GPIO.HIGH)
+                time.sleep(delay)
+                for j in range (3):
+                    if steps[j] > 0:
+                        # GPIO.output(STEPPLUS[j],GPIO.LOW)
+                        steps[j] -= 1
+                        # print(signal)
+                        if(directions[j] == "b"):
+                            # signal = GPIO.input(SENSOR[j])
+                            signal = 1
+                            if(count_of_signals[j]<self.limit_signals_count):
+                                if(signal == 0):
+                                    count_of_signals[j] += 1
+                                else:
+                                    count_of_signals[j] = 0
+                            else:
+                                print("error breaking")
+                                xyz[j] += int(steps[j] / 2)
+                                steps[j] = 0
+            
+
+                time.sleep(delay)
+        except KeyboardInterrupt:
+            print("Keyboard interrupt")
+        except:
+            print("some error") 
+        finally:
+            print("clean up") 
+            # GPIO.cleanup()
+
+        self.coordX = xyz[0]
+        self.coordY = xyz[1]
+        self.coordZ = xyz[2]
+        response = await self.getjson(self.coordX,self.coordY,self.coordZ,self.status)
+        return response
+        print("set GPIO high")
+
+    async def check_pin(self,pin):
+        # GPIO.setmode(GPIO.BOARD)
+        # GPIO.setup(pin,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+        # signal = GPIO.input(pin)
+        signal = 1
+        return signal
+
+    async def init(self):
+        sensors = [36,37,38]
+        for i in range(3):
+            sensor = sensors[i]
+            signals_count = 0
+            for j in range(1000):
+                signal = await self.check_pin(sensor)
+                if(signal == 0):
+                   signals_count += 1
+            print(signals_count)
+            if(signals_count > 920):
+                if(i == 0):
+                    await self.move_x(500,'f')
+                    print("x")
+                elif(i==1):
+                    await self.move_y(500,'f')
+                    print("y")
+                else:
+                    await self.move_z(500,'f')
+                    print("z")
+            time.sleep(0.1)
+        
+        await self.move_x(self.limitX,'b')
+        time.sleep(0.1)
+        await self.move_y(self.limitY,'b')
+        time.sleep(0.1)
+        await self.move_z(self.limitZ,'b')
+
+        self.coordX = 0
+        self.coordY = 0
+        self.coordZ = 0
+        # self.status = "inited"
+        self.status = "inited!!!!!"
+
+        json_str = await self.getjson(self.coordX,self.coordY,self.coordZ,self.status)
+        return json_str
+
+    async def getjson(self,x,y,z,status):
+        data = {
+            "x":x,
+            "y":y,
+            "z":z,
+            "status":status
+        }
+        json_str = json.dumps(data)
+        print(data,json_str)
+        return json_str
+    
+    async def check(self):
+        data = {
+            "x": self.coordX,
+            "y": self.coordY,
+            "z": self.coordZ,
+            "status": self.status
+        }
+        json_str = json.dumps(data)
+        print(data,json_str)
+        return json_str
+
+server = Server()
+# start_server = websockets.serve(server.ws_handler,'192.168.42.100',8080)
+start_server = websockets.serve(server.ws_handler,'localhost',5001)
+loop = asyncio.get_event_loop()
+loop.run_until_complete(start_server)
+loop.run_forever()
