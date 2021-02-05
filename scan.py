@@ -974,7 +974,8 @@ class MicrosController:
                 self.video_stream.read()
             check, img = self.video_stream.read()
             if crop:
-                return np.copy(img[self.frame[3]:self.frame[1]:-1, self.frame[2]:self.frame[0]:-1, :])
+                # return np.copy(img[self.frame[3]-1:self.frame[1]:-1, self.frame[2]-1:self.frame[0]:-1, :])
+                return np.copy(img[self.frame[1]:self.frame[3]:-1, self.frame[0]:self.frame[2]:-1, :][::-1, ::-1, :])
             else:
                 return np.copy(img[::-1, ::-1, :])
 

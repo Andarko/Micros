@@ -96,7 +96,7 @@ class SavedData(object):
                     row = []
                     for j in range(self.colCount):
                         row.append(cv2.imread(os.path.join(self.folder,
-                                                           prefix + str(i+1) + "_" + str(j+1) + ".jpg"))[:, :, ::-1])
+                                                           prefix + str(i+1) + "_" + str(j+1) + ".jpg")))
                     layer.append(row)
                 self.arrayLoadImages.append(layer)
         else:
@@ -110,11 +110,11 @@ class SavedData(object):
         for i in range(self.rowCount):
             # Вычисление размера частей картинок, нужных для склейки между собой
             y1 = self.connectionArea.y
-            if i == 0:
-                y1 = 0
+            # if i == 0:
+            #     y1 = 0
             y2 = self.connectionArea.y + self.connectionArea.height
-            if i == self.rowCount - 1:
-                y2 = self.imgSize.height
+            # if i == self.rowCount - 1:
+            #     y2 = self.imgSize.height
 
             minimap_row = np.zeros(0)
             for j in range(self.colCount):
@@ -124,11 +124,11 @@ class SavedData(object):
                                                                "P_" + str(i+1) + "_" + str(j+1) + ".jpg"))) \
                         and os.path.exists(os.path.join(self.folder, "S_" + str(i+1) + "_" + str(j+1) + ".jpg")):
                     x1 = self.connectionArea.x
-                    if j == 0:
-                        x1 = 0
+                    # if j == 0:
+                    #     x1 = 0
                     x2 = self.connectionArea.x + self.connectionArea.width
-                    if j == self.colCount - 1:
-                        x2 = self.imgSize.width
+                    # if j == self.colCount - 1:
+                    #     x2 = self.imgSize.width
                     img_s = cv2.imread(os.path.join(self.folder, "S_" + str(i+1) + "_" + str(j+1) + ".jpg"))
                     img_p = np.copy(img_s[y1:y2, x1:x2, :])
                     cv2.imwrite(os.path.join(self.folder, "P_" + str(i+1) + "_" + str(j+1) + ".jpg"), img_p)
@@ -252,18 +252,18 @@ class SavedData(object):
                 for i in range(self.rowCount + 1):
                     array_row = []
                     x = 0
-                    if i == 0 or i == self.rowCount - 1:
-                        dy = self.imgSize.height - self.connectionArea.y
-                    elif i == self.rowCount:
+                    # if i == 0 or i == self.rowCount - 1:
+                    #     dy = self.imgSize.height - self.connectionArea.y
+                    if i == self.rowCount:
                         dy = 0
                     else:
                         dy = self.connectionArea.height
                     if k > 0:
                         dy >>= k
                     for j in range(self.colCount + 1):
-                        if j == 0 or j == self.colCount - 1:
-                            dx = self.imgSize.width - self.connectionArea.x
-                        elif j == self.colCount:
+                        # if j == 0 or j == self.colCount - 1:
+                        #     dx = self.imgSize.width - self.connectionArea.x
+                        if j == self.colCount:
                             dx = 0
                         else:
                             dx = self.connectionArea.width
@@ -311,15 +311,15 @@ class ImageView(object):
             prefix += str(new_scale_index)
         prefix += "_"
         self.saved_data_clear()
-        self.sumImg = np.zeros(0, dtype = np.uint8)
+        self.sumImg = np.zeros(0, dtype=np.uint8)
         for i in range(new_rect.y, new_rect.y + new_rect.height):
-            row_img = np.zeros(0, dtype = np.uint8)
+            row_img = np.zeros(0, dtype=np.uint8)
             for j in range(new_rect.x, new_rect.x + new_rect.width):
                 if self.saved_data.allImageInMemory:
                     img = self.saved_data.arrayLoadImages[new_scale_index][i][j]
                 else:
                     img = cv2.imread(os.path.join(self.saved_data.folder,
-                                                  prefix + str(i + 1) + "_" + str(j + 1) + ".jpg"))[:, :, ::-1]
+                                                  prefix + str(i + 1) + "_" + str(j + 1) + ".jpg"))
                 if row_img.size == 0:
                     # row_img = np.copy(img)
                     row_img = img
@@ -377,7 +377,7 @@ class ImageView(object):
                         img = self.saved_data.arrayLoadImages[new_scale_index][i][j]
                     else:
                         img = cv2.imread(os.path.join(self.saved_data.folder,
-                                                      prefix + str(i + 1) + "_" + str(j + 1) + ".jpg"))[:, :, ::-1]
+                                                      prefix + str(i + 1) + "_" + str(j + 1) + ".jpg"))
                     if temp_column.size == 0:
                         temp_column = img
                     else:
@@ -399,7 +399,7 @@ class ImageView(object):
                         img = self.saved_data.arrayLoadImages[new_scale_index][i][j]
                     else:
                         img = cv2.imread(os.path.join(self.saved_data.folder,
-                                                      prefix + str(i + 1) + "_" + str(j + 1) + ".jpg"))[:, :, ::-1]
+                                                      prefix + str(i + 1) + "_" + str(j + 1) + ".jpg"))
                     if temp_column.size == 0:
                         temp_column = img
                     else:
@@ -419,7 +419,7 @@ class ImageView(object):
                         img = self.saved_data.arrayLoadImages[new_scale_index][i][j]
                     else:
                         img = cv2.imread(os.path.join(self.saved_data.folder,
-                                                      prefix + str(i + 1) + "_" + str(j + 1) + ".jpg"))[:, :, ::-1]
+                                                      prefix + str(i + 1) + "_" + str(j + 1) + ".jpg"))
                     if temp_row.size == 0:
                         temp_row = img
                     else:
@@ -441,7 +441,7 @@ class ImageView(object):
                         img = self.saved_data.arrayLoadImages[new_scale_index][i][j]
                     else:
                         img = cv2.imread(os.path.join(self.saved_data.folder,
-                                                      prefix + str(i + 1) + "_" + str(j + 1) + ".jpg"))[:, :, ::-1]
+                                                      prefix + str(i + 1) + "_" + str(j + 1) + ".jpg"))
                     if temp_row.size == 0:
                         temp_row = img
                     else:
@@ -551,14 +551,15 @@ def numpy_q_image(image):
                 height, width, channels = image.shape
                 bytes_per_line = channels * width
                 q_img = QImage(
-                    image.data, width, height, bytes_per_line, QImage.Format_RGB888
+                    # image.data, width, height, bytes_per_line, QImage.Format_RGB888
+                    image.data, width, height, bytes_per_line, QImage.Format_BGR888
                 )
             elif image.shape[2] == 4:
                 height, width, channels = image.shape
                 bytes_per_line = channels * width
-                fmt = QImage.Format_ARGB32
                 q_img = QImage(
-                    image.data, width, height, bytes_per_line, QImage.Format_ARGB32
+                    # image.data, width, height, bytes_per_line, QImage.Format_ARGB32
+                    image.data, width, height, bytes_per_line, QImage.Format_BGR888
                 )
     return q_img
 
@@ -1048,7 +1049,7 @@ class MainWindow(QMainWindow):
                 self.savedData.prepare_scans()
                 path_to_minimap = os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, "mini.jpg")
                 if os.path.exists(path_to_minimap):
-                    self.imageView.minimapBase = cv2.imread(path_to_minimap, cv2.IMREAD_COLOR)[:, :, ::-1]
+                    self.imageView.minimapBase = cv2.imread(path_to_minimap, cv2.IMREAD_COLOR)
                 self.file_name = file_name
                 self.modified = False
                 self.savedData.set_all_image_in_memory(sum_size <= self.programSettings.fullLoadImageMemoryLimit)
