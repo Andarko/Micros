@@ -379,8 +379,8 @@ class ScanWindow(QMainWindow):
         try:
             if self.table_controller.server_status == 'uninitialized':
                 self.table_controller.coord_init()
-            # Перевод камеры к позиции, где должна располагаться микросхема
 
+            # Перевод камеры к позиции, где должна располагаться микросхема
             x = int(self.table_controller.limits_mm[0] / 2)
             y = int(self.table_controller.limits_mm[1] / 3)
             if self.micros_controller.test:
@@ -721,14 +721,21 @@ class ScanWindow(QMainWindow):
         img_size_height = Xml.SubElement(img_size, "Height")
         img_size_height.text = str(int(self.snap_height_mm * self.pixels_in_mm))
         img_con_area = Xml.SubElement(elem_img, "ConnectionArea")
+        # HERE orientation param need
         ica_x = Xml.SubElement(img_con_area, "X")
-        ica_x.text = str(self.micros_controller.frame[0])
+        # ica_x.text = str(self.micros_controller.frame[0])
+        ica_x.text = str(self.program_settings.snap_settings.offset[2])
         ica_y = Xml.SubElement(img_con_area, "Y")
-        ica_y.text = str(self.micros_controller.frame[1])
+        # ica_y.text = str(self.micros_controller.frame[1])
+        ica_y.text = str(self.program_settings.snap_settings.offset[3])
         ica_width = Xml.SubElement(img_con_area, "Width")
-        ica_width.text = str(int(self.frame_width_mm * self.pixels_in_mm))
+        # ica_width.text = str(int(self.frame_width_mm * self.pixels_in_mm))
+        ica_width.text = str(self.program_settings.snap_settings.frame[2]
+                             - self.program_settings.snap_settings.offset[2])
         ica_height = Xml.SubElement(img_con_area, "Height")
-        ica_height.text = str(int(self.frame_height_mm * self.pixels_in_mm))
+        # ica_height.text = str(int(self.frame_height_mm * self.pixels_in_mm))
+        ica_height.text = str(self.program_settings.snap_settings.frame[3]
+                              - self.program_settings.snap_settings.offset[3])
 
         tree = Xml.ElementTree(root)
         with open(self.path_for_xml_file, "w"):
@@ -974,8 +981,9 @@ class MicrosController:
                 self.video_stream.read()
             check, img = self.video_stream.read()
             if crop:
+                # HERE orientation param need
                 # return np.copy(img[self.frame[3]-1:self.frame[1]:-1, self.frame[2]-1:self.frame[0]:-1, :])
-                return np.copy(img[self.frame[1]:self.frame[3]:-1, self.frame[0]:self.frame[2]:-1, :][::-1, ::-1, :])
+                return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :][::-1, ::-1, :])
             else:
                 return np.copy(img[::-1, ::-1, :])
 
