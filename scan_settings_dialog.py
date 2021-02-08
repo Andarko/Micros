@@ -38,6 +38,9 @@ class TableSettings(object):
     def __init__(self):
         self.steps_in_mm = 80
         self.limits_mm = [340, 640, 70]
+        self.limits_step = list()
+        for limit_mm in self.limits_mm:
+            self.limits_step.append(limit_mm * self.steps_in_mm)
         # self.limits_step = 80 * self.limits_mm
 
 

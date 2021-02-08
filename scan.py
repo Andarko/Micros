@@ -39,9 +39,10 @@ class ScanWindow(QMainWindow):
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
         test = False
-        self.table_controller = TableController(self.loop, test)
+        self.program_settings = ProgramSettings(test)
+        self.table_controller = TableController(self.loop, self.program_settings, test)
         # TEST Для удобства тестирования передаю в контроллер стола контроллер камеры
-        self.micros_controller = MicrosController(self.table_controller.test)
+        self.micros_controller = MicrosController(self.program_settings, test)
         # if self.table_controller.test:
         #     self.table_controller.micros_controller = self.micros_controller
         #     self.table_controller.program_settings = self.program_settings
@@ -65,41 +66,34 @@ class ScanWindow(QMainWindow):
         self.dir_for_img = "SavedImg"
         self.path_for_xml_file = os.path.join(self.dir_for_img, "settings.xml")
 
-        self.program_settings = ProgramSettings(self.table_controller.test)
-
-        # self.table_controller.steps_in_mm = self.program_settings.steps_in_mm
-        # self.table_controller.limits_step = self.program_settings.limits_step
-        # self.table_controller.limits_mm = self.program_settings.limits_mm
-        self.table_controller.steps_in_mm = self.program_settings.table_settings.steps_in_mm
+        # self.table_controller.steps_in_mm = self.program_settings.table_settings.steps_in_mm
+        # self.table_controller.limits_mm = self.program_settings.table_settings.limits_mm
         # self.table_controller.limits_step = self.program_settings.table_settings.limits_step
-        self.table_controller.limits_mm = self.program_settings.table_settings.limits_mm
-        self.table_controller.limits_step = list()
-        for limit_mm in self.table_controller.limits_mm:
-            self.table_controller.limits_step.append(limit_mm * self.table_controller.steps_in_mm)
 
-        self.pixels_in_mm = self.program_settings.snap_settings.pixels_in_mm
-        self.snap_width = self.program_settings.snap_settings.snap_width
-        self.snap_height = self.program_settings.snap_settings.snap_height
-        self.snap_width_mm = self.snap_width / self.pixels_in_mm
-        self.snap_height_mm = self.snap_height / self.pixels_in_mm
-        self.snap_width_mm_half = 0.5 * self.snap_width_mm
-        self.snap_height_mm_half = 0.5 * self.snap_height_mm
+        # self.table_controller.limits_step = list()
+        # for limit_mm in self.table_controller.limits_mm:
+        #     self.table_controller.limits_step.append(limit_mm * self.table_controller.steps_in_mm)
 
-        self.work_height = self.program_settings.snap_settings.work_height
-
-        self.micros_controller.frame = self.program_settings.snap_settings.frame
-        self.frame_width = self.micros_controller.frame[2] - self.micros_controller.frame[0]
-        self.frame_height = self.micros_controller.frame[3] - self.micros_controller.frame[1]
-        self.frame_width_mm = self.frame_width / self.pixels_in_mm
-        self.frame_height_mm = self.frame_height / self.pixels_in_mm
-
-        self.delta_x = int(self.frame_width / 10)
-        self.delta_y = int(self.frame_height / 10)
+        # self.pixels_in_mm = self.program_settings.snap_settings.pixels_in_mm
+        # self.snap_width = self.program_settings.snap_settings.snap_width
+        # self.snap_height = self.program_settings.snap_settings.snap_height
+        # self.snap_width_mm = self.snap_width / self.pixels_in_mm
+        # self.snap_height_mm = self.snap_height / self.pixels_in_mm
+        # self.work_height = self.program_settings.snap_settings.work_height
+        #
+        # # self.micros_controller.frame = self.program_settings.snap_settings.frame
+        # self.frame_width = self.micros_controller.frame[2] - self.micros_controller.frame[0]
+        # self.frame_height = self.micros_controller.frame[3] - self.micros_controller.frame[1]
+        # self.frame_width_mm = self.frame_width / self.pixels_in_mm
+        # self.frame_height_mm = self.frame_height / self.pixels_in_mm
+        #
+        # self.delta_x = int(self.frame_width / 10)
+        # self.delta_y = int(self.frame_height / 10)
 
         # Наличие несохраненного изображения
         self.unsaved = False
 
-        if self.table_controller.test:
+        if test:
             print("Внимание! Программа работает в тестовом режиме!")
 
         # Доступные для взаимодействия компоненты формы
@@ -117,6 +111,7 @@ class ScanWindow(QMainWindow):
         self.btn_scan = QPushButton("Новая съемка")
         self.btn_save_scan = QPushButton("Сохранить съемку")
 
+        self.clear_test_data()
         self.init_ui()
 
     # Создание элементов формы
@@ -238,6 +233,55 @@ class ScanWindow(QMainWindow):
         self.move(300, 300)
         self.setMinimumSize(800, 600)
         # self.show()
+        print(self.pixels_in_mm)
+
+    def _get_pixels_in_mm(self):
+        return self.program_settings.snap_settings.pixels_in_mm
+    pixels_in_mm = property(_get_pixels_in_mm)
+
+    def _get_snap_width(self):
+        return self.program_settings.snap_settings.snap_width
+    snap_width = property(_get_snap_width)
+
+    def _get_snap_height(self):
+        return self.program_settings.snap_settings.snap_height
+    snap_height = property(_get_snap_height)
+
+    def _get_snap_width_mm(self):
+        return self.snap_width / self.pixels_in_mm
+    snap_width_mm = property(_get_snap_width_mm)
+
+    def _get_snap_height_mm(self):
+        return self.snap_height / self.pixels_in_mm
+    snap_height_mm = property(_get_snap_height_mm)
+
+    def _get_work_height(self):
+        return self.program_settings.snap_settings.work_height
+    work_height = property(_get_work_height)
+
+    def _get_frame_width(self):
+        return self.program_settings.snap_settings.frame[2] - self.program_settings.snap_settings.frame.frame[0]
+    frame_width = property(_get_frame_width)
+
+    def _get_frame_height(self):
+        return self.program_settings.snap_settings.frame[3] - self.program_settings.snap_settings.frame.frame[1]
+    frame_height = property(_get_frame_height)
+
+    def _get_frame_width_mm(self):
+        return self.frame_width / self.pixels_in_mm
+    frame_width_mm = property(_get_frame_width_mm)
+
+    def _get_frame_height_mm(self):
+        return self.frame_height / self.pixels_in_mm
+    frame_height_mm = property(_get_frame_height_mm)
+
+    def _get_delta_x(self):
+        return int(self.frame_width / 10)
+    delta_x = property(_get_delta_x)
+
+    def _get_delta_y(self):
+        return int(self.frame_height / 10)
+    delta_y = property(_get_delta_y)
 
     # Тестовая обертка функции движения, чтобы обходиться без подключенного станка
     def coord_move(self, coord, mode="discrete", crop=False):
@@ -286,12 +330,15 @@ class ScanWindow(QMainWindow):
         self.closed = True
 
     def services_menu_action_settings_click(self):
-        QMessageBox.warning(self, "Warning!",
-                            "Программа работает в тестовом режиме. Настройки не будут сохраняться!",
-                            QMessageBox.Ok, QMessageBox.Ok)
+        if self.program_settings.test:
+            QMessageBox.warning(self, "Warning!",
+                                "Программа работает в тестовом режиме. Настройки не будут сохраняться!",
+                                QMessageBox.Ok, QMessageBox.Ok)
         settings_dialog = SettingsDialog(self.program_settings)
         settings_dialog.setAttribute(Qt.WA_DeleteOnClose)
-        settings_dialog.exec()
+        dlg_result = settings_dialog.exec()
+        if dlg_result > 0:
+            self.table_controller.server_status = 'uninitialized'
 
     def device_init(self):
         self.control_elements_enabled(False)
@@ -343,6 +390,19 @@ class ScanWindow(QMainWindow):
         self.edt_border_y1.setEnabled(status)
         self.edt_border_x2.setEnabled(status)
         self.edt_border_y2.setEnabled(status)
+
+    @staticmethod
+    def save_test_data(data):
+        f = open('test.txt', 'a')
+        now = datetime.datetime.now()
+        f.write(now.strftime("%d.%m.%Y %H:%M:%S") + "<=" + str(data) + '\r\n')
+        f.close()
+
+    @staticmethod
+    def clear_test_data():
+        f = open('test.txt', 'w+')
+        f.seek(0)
+        f.close()
 
     # Тестовая функция для рисования круга и спирали
     def test_circle(self):
@@ -403,17 +463,27 @@ class ScanWindow(QMainWindow):
                 previous_direction = direction.previous()
                 # for direction in direction_sequence:
                 # Берем следующий фрейм до тех пор, пока не выйдем за границу изделтя
-                print("direction=" + str(direction))
+                self.save_test_data("direction=" + str(direction))
                 while True:
                     # При наличии предыдущего направления движения (все, кроме первого направления)
                     # проверяем, не смещается ли изделие поперек линии поиска
                     # if previous_direction:
                     if direction.abs_index > 0:
                         # Проверяем - не ушли ли мы вовнутрь или наружу объекта
-                        while True:
+                        stuck = False
+                        correction_list = list()
+                        while not stuck:
                             correction_count = self.check_object_middle(snap,
                                                                         previous_direction,
                                                                         [self.delta_x, self.delta_y])
+                            correction_list.append(correction_count)
+                            if len(correction_list) >= 4:
+                                if correction_list[-1] == correction_list[-3]:
+                                    if correction_list[-2] == correction_list[-4]:
+                                        if correction_list[-1] * correction_list[-2] < 0:
+                                            correction_count //= 2
+                                            stuck = True
+                                            self.save_test_data("unstuck!")
                             if correction_count == 0:
                                 break
                             # Проверяем - не вышли ли мы за пределы стола
@@ -437,9 +507,9 @@ class ScanWindow(QMainWindow):
                             all_y.append(y)
                             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
                             if correction_count > 0:
-                                print('x = ' + str(x) + '; y = ' + str(y) + ' inside correction')
+                                self.save_test_data('x = ' + str(x) + '; y = ' + str(y) + ' inside correction')
                             elif correction_count < 0:
-                                print('x = ' + str(x) + '; y = ' + str(y) + ' outside correction')
+                                self.save_test_data('x = ' + str(x) + '; y = ' + str(y) + ' outside correction')
 
                     forward_count = self.find_border_in_image(snap,
                                                               direction,
@@ -469,7 +539,7 @@ class ScanWindow(QMainWindow):
                         forward_count_total += forward_count
                         snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
 
-                        print('x = ' + str(x) + '; y = ' + str(y))
+                        self.save_test_data('x = ' + str(x) + '; y = ' + str(y))
                     else:
                         if forward_count_total > forward_over_move:
                             all_x.pop()
@@ -479,7 +549,7 @@ class ScanWindow(QMainWindow):
                             all_x.append(x)
                             all_y.append(y)
                             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
-                            print('x = ' + str(x) + '; y = ' + str(y) + ' forward correction')
+                            self.save_test_data('x = ' + str(x) + '; y = ' + str(y) + ' forward correction')
                         break
                 # previous_direction = direction
                 direction = direction.next()
@@ -518,12 +588,11 @@ class ScanWindow(QMainWindow):
         return 0
 
     @staticmethod
-    # HERE
     # Комбинированный метод, следящий за тем, чтобы граница объекта при поиске находилась в середине изображения
     # (в направлении поперек обхода)
     def check_object_middle(img, direction, delta):
         index = abs(direction[1])
-
+        non_white_limit = int(0.03 * img.shape[index])
         middle = int(img.shape[1 - index] / 2)
         if direction[index] > 0:
             middle -= 1
@@ -531,16 +600,15 @@ class ScanWindow(QMainWindow):
         coord = [0, 0]
         # for i in range(0, 6):
         for i in range(5, -6, -1):
-            white = True
             coord[index] = middle + i * delta[index] * direction[index]
+            non_white_count = 0
             for j in range(img.shape[index]):
                 coord[1 - index] = j
                 for k in range(3):
                     if img[coord[1]][coord[0]][k] < 128:
-                        white = False
-                if not white:
-                    break
-            if not white:
+                        non_white_count += 1
+                        break
+            if non_white_count > non_white_limit:
                 return i
         return -5
 
@@ -897,13 +965,13 @@ class KeyboardButton:
 
 # Класс управления микроскопом (пока тестовая подделка)
 class MicrosController:
-    def __init__(self, test: bool):
+    def __init__(self, program_settings: ProgramSettings, test: bool):
         self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_3.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
         # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
         self.test_img = cv2.imread(self.test_img_path)[:, :, :]
         self.test = test
-        self.frame = list()
+        # self.frame = list()
 
         if not self.test:
             max_video_streams = 10
@@ -931,6 +999,10 @@ class MicrosController:
                 except:
                     # self.video_stream.stop()
                     check_next_stream = True
+
+    def _get_frame(self):
+        return self.program_settings.snap_settings.frame
+    frame = property(_get_frame)
 
     @staticmethod
     def numpy_to_q_image(image):
@@ -993,7 +1065,8 @@ class MicrosController:
 # 2. Запускает сервер на Raspberry pi
 # 3. Управляет движениями станка
 class TableController:
-    def __init__(self, loop, test=False, hostname="192.168.42.100", port=8080):
+    def __init__(self, loop, program_settings: ProgramSettings, test=False, hostname="192.168.42.100", port=8080):
+        self.program_settings = program_settings
         # Параметры подключения к серверу raspberry pi
         self.hostname = hostname
         self.port = port
@@ -1008,9 +1081,9 @@ class TableController:
         self.manual_right_count = 0
         self.loop = loop
         self.thread_server = Thread(target=self.server_start)
-        self.steps_in_mm = 80
-        self.limits_step = []
-        self.limits_mm = []
+        # self.steps_in_mm = 80
+        # self.limits_step = []
+        # self.limits_mm = []
         # self.steps_in_mm = 80
         # self.limits_step = (340 * self.steps_in_mm, 640 * self.steps_in_mm, 70 * self.steps_in_mm)
         # Режим тестирования - без работы с установкой
@@ -1021,6 +1094,18 @@ class TableController:
     def __repr__(self):
         return "coord = " + str(self.coord_mm) + "; server status = " + self.server_status \
                + "; last op status = " + self.operation_status
+
+    def _get_steps_in_mm(self):
+        return self.program_settings.table_settings.steps_in_mm
+    steps_in_mm = property(_get_steps_in_mm)
+
+    def _get_limits_step(self):
+        return self.program_settings.table_settings.limits_step
+    limits_step = property(_get_limits_step)
+
+    def _get_limits_mm(self):
+        return self.program_settings.table_settings.limits_mm
+    limits_mm = property(_get_limits_mm)
 
     async def consumer(self):
         url = f"ws://{self.hostname}:{self.port}"
@@ -1098,9 +1183,7 @@ class TableController:
             # loop = asyncio.get_event_loop()
             data = self.get_request(x_step=int(dx), y_step=int(dy), z_step=int(dz), mode=mode)
             result = self.loop.run_until_complete(self.produce(message=data, host=self.hostname, port=self.port))
-            f = open('test.txt', 'a')
-            now = datetime.datetime.now()
-            f.write(now.strftime("%d.%m.%Y %H:%M:%S") + "<=" + str(result) + '\r\n')
+
             self.result_unpack(result)
         else:
             if mode == "discrete":
