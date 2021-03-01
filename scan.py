@@ -35,10 +35,10 @@ class ScanWindow(QMainWindow):
     # Инициализация
     def __init__(self, main_window):
         super().__init__()
+        test = True
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
-        test = False
         self.program_settings = ProgramSettings(test)
         self.table_controller = TableController(self.loop, self.program_settings, test)
         # TEST Для удобства тестирования передаю в контроллер стола контроллер камеры
@@ -112,6 +112,7 @@ class ScanWindow(QMainWindow):
         self.btn_save_scan = QPushButton("Сохранить съемку")
 
         self.clear_test_data()
+
         self.init_ui()
 
     # Создание элементов формы
@@ -235,53 +236,61 @@ class ScanWindow(QMainWindow):
         # self.show()
         print(self.pixels_in_mm)
 
-    def _get_pixels_in_mm(self):
+    def __get_pixels_in_mm(self):
         return self.program_settings.snap_settings.pixels_in_mm
-    pixels_in_mm = property(_get_pixels_in_mm)
+    pixels_in_mm = property(__get_pixels_in_mm)
 
-    def _get_snap_width(self):
+    def __get_snap_width(self):
         return self.program_settings.snap_settings.snap_width
-    snap_width = property(_get_snap_width)
+    snap_width = property(__get_snap_width)
 
-    def _get_snap_height(self):
+    def __get_snap_height(self):
         return self.program_settings.snap_settings.snap_height
-    snap_height = property(_get_snap_height)
+    snap_height = property(__get_snap_height)
 
-    def _get_snap_width_mm(self):
+    def __get_snap_width_mm(self):
         return self.snap_width / self.pixels_in_mm
-    snap_width_mm = property(_get_snap_width_mm)
+    snap_width_mm = property(__get_snap_width_mm)
 
-    def _get_snap_height_mm(self):
+    def __get_snap_height_mm(self):
         return self.snap_height / self.pixels_in_mm
-    snap_height_mm = property(_get_snap_height_mm)
+    snap_height_mm = property(__get_snap_height_mm)
 
-    def _get_work_height(self):
+    def __get_work_height(self):
         return self.program_settings.snap_settings.work_height
-    work_height = property(_get_work_height)
+    work_height = property(__get_work_height)
 
-    def _get_frame_width(self):
-        return self.program_settings.snap_settings.frame[2] - self.program_settings.snap_settings.frame.frame[0]
-    frame_width = property(_get_frame_width)
-
-    def _get_frame_height(self):
-        return self.program_settings.snap_settings.frame[3] - self.program_settings.snap_settings.frame.frame[1]
-    frame_height = property(_get_frame_height)
-
-    def _get_frame_width_mm(self):
-        return self.frame_width / self.pixels_in_mm
-    frame_width_mm = property(_get_frame_width_mm)
-
-    def _get_frame_height_mm(self):
-        return self.frame_height / self.pixels_in_mm
-    frame_height_mm = property(_get_frame_height_mm)
-
-    def _get_delta_x(self):
+    def __get_delta_x(self):
         return int(self.frame_width / 10)
-    delta_x = property(_get_delta_x)
+    delta_x = property(__get_delta_x)
+    # def delta_x(self):
+    #     return int(self.frame_width / 10)
 
-    def _get_delta_y(self):
+    def __get_delta_y(self):
         return int(self.frame_height / 10)
-    delta_y = property(_get_delta_y)
+    delta_y = property(__get_delta_y)
+    # def delta_y(self):
+    #     return int(self.frame_height / 10)
+
+    def __get_frame_width(self):
+        return self.program_settings.snap_settings.frame[2] - self.program_settings.snap_settings.frame[0]
+    frame_width = property(__get_frame_width)
+    # def frame_width(self):
+    #     return self.program_settings.snap_settings.frame[2] - self.program_settings.snap_settings.frame[0]
+
+    def __get_frame_height(self):
+        return self.program_settings.snap_settings.frame[3] - self.program_settings.snap_settings.frame[1]
+    frame_height = property(__get_frame_height)
+    # def frame_height(self):
+    #     return self.program_settings.snap_settings.frame[3] - self.program_settings.snap_settings.frame[1]
+
+    def __get_frame_width_mm(self):
+        return self.frame_width / self.pixels_in_mm
+    frame_width_mm = property(__get_frame_width_mm)
+
+    def __get_frame_height_mm(self):
+        return self.frame_height / self.pixels_in_mm
+    frame_height_mm = property(__get_frame_height_mm)
 
     # Тестовая обертка функции движения, чтобы обходиться без подключенного станка
     def coord_move(self, coord, mode="discrete", crop=False):
@@ -559,7 +568,7 @@ class ScanWindow(QMainWindow):
             self.edt_border_x2.setText(str(max(all_x)))
             self.edt_border_y2.setText(str(max(all_y)))
         except Exception as e:
-            # raise
+            raise
             QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + str(e),
                                  QMessageBox.Ok, QMessageBox.Ok)
         finally:
@@ -691,7 +700,6 @@ class ScanWindow(QMainWindow):
 
         frame_size_mm = [self.frame_width_mm, self.frame_height_mm]
         count = [0, 0]
-
         for i in range(2):
             # Определяем на сколько мм выступает все поле съемки из целого числа кадров
             x_overage = (coord[i + 2] - coord[i]) % frame_size_mm[i]
@@ -914,9 +922,13 @@ class Direction:
     def __repr__(self):
         return str(self.__abs_index) + str(self.__direction)
 
-    @property
-    def abs_index(self):
+    def __get_abs_index(self):
         return self.__abs_index
+    abs_index = property(__get_abs_index)
+
+    # @property
+    # def abs_index(self):
+    #     return self.__abs_index
 
     def previous(self):
         return Direction(self.__abs_index - 1, [self.__direction[1], -self.__direction[0]])
@@ -1000,9 +1012,9 @@ class MicrosController:
                     # self.video_stream.stop()
                     check_next_stream = True
 
-    def _get_frame(self):
+    def __get_frame(self):
         return self.program_settings.snap_settings.frame
-    frame = property(_get_frame)
+    frame = property(__get_frame)
 
     @staticmethod
     def numpy_to_q_image(image):
@@ -1095,17 +1107,17 @@ class TableController:
         return "coord = " + str(self.coord_mm) + "; server status = " + self.server_status \
                + "; last op status = " + self.operation_status
 
-    def _get_steps_in_mm(self):
+    def __get_steps_in_mm(self):
         return self.program_settings.table_settings.steps_in_mm
-    steps_in_mm = property(_get_steps_in_mm)
+    steps_in_mm = property(__get_steps_in_mm)
 
-    def _get_limits_step(self):
+    def __get_limits_step(self):
         return self.program_settings.table_settings.limits_step
-    limits_step = property(_get_limits_step)
+    limits_step = property(__get_limits_step)
 
-    def _get_limits_mm(self):
+    def __get_limits_mm(self):
         return self.program_settings.table_settings.limits_mm
-    limits_mm = property(_get_limits_mm)
+    limits_mm = property(__get_limits_mm)
 
     async def consumer(self):
         url = f"ws://{self.hostname}:{self.port}"
