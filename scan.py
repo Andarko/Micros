@@ -35,7 +35,7 @@ class ScanWindow(QMainWindow):
     # Инициализация
     def __init__(self, main_window):
         super().__init__()
-        test = True
+        test = False
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
@@ -984,6 +984,7 @@ class MicrosController:
         self.test_img = cv2.imread(self.test_img_path)[:, :, :]
         self.test = test
         # self.frame = list()
+        self.program_settings: ProgramSettings = program_settings
 
         if not self.test:
             max_video_streams = 10
@@ -1002,13 +1003,14 @@ class MicrosController:
                 self.video_stream.set(3, 1920)
                 self.video_stream.set(4, 1080)
 
+                # noinspection PyBroadException
                 try:
                     check_read, img = self.video_stream.read()
                     if not check_read:
                         continue
-                    check_frame = img[:, :, :]
+                    # check_frame = img[:, :, :]
                     check_next_stream = False
-                except:
+                except Exception:
                     # self.video_stream.stop()
                     check_next_stream = True
 
@@ -1065,11 +1067,12 @@ class MicrosController:
                 self.video_stream.read()
             check, img = self.video_stream.read()
             if crop:
-                # HERE orientation param need
                 # return np.copy(img[self.frame[3]-1:self.frame[1]:-1, self.frame[2]-1:self.frame[0]:-1, :])
-                return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :][::-1, ::-1, :])
+                # return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :][::-1, ::-1, :])
+                return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :])
             else:
-                return np.copy(img[::-1, ::-1, :])
+                # return np.copy(img[::-1, ::-1, :])
+                return np.copy(img)
 
 
 # Класс, который общается с контроллером станка

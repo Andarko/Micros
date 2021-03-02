@@ -1,8 +1,7 @@
 from PyQt5.QtWidgets import QDialog, QComboBox, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QInputDialog, \
     QLineEdit, QMessageBox, QFormLayout, QDoubleSpinBox, QSpinBox, QAbstractSpinBox, QDialogButtonBox
-from PyQt5.QtCore import Qt, QSize, QRect
+from PyQt5.QtCore import QSize
 import xml.etree.ElementTree as XmlET
-
 
 # Класс для хранения всех настроек камер. Он может загружаться из файла и сохраняться в файл
 from lxml import etree

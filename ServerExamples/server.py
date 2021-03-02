@@ -28,12 +28,12 @@ class Server:
 
         self.max_count_signals = 80
 
-        self.STEPPLUS = [7, 15, 29]
-        self.STEPMINUS = [8, 16, 31]
-        self.DIRPLUS = [10, 18, 32]
-        self.DIRMINUS = [11, 19, 33]
-        self.ENBPLUS = [12, 21, 35]
-        self.ENBMINUS = [13, 22, 36]
+        self.STEP_PLUS = [7, 15, 29]
+        self.STEP_MINUS = [8, 16, 31]
+        self.DIR_PLUS = [10, 18, 32]
+        self.DIR_MINUS = [11, 19, 33]
+        self.ENB_PLUS = [12, 21, 35]
+        self.ENB_MINUS = [13, 22, 36]
 
         self.SENSOR = [23, 24, 26]
 
@@ -88,34 +88,35 @@ class Server:
         distances = [abs(distancex) * 2, abs(distancey) * 2, abs(distancez) * 2]
         GPIO.setmode(GPIO.BOARD)
         for i in range(3):
-            GPIO.setup(self.STEPPLUS[i], GPIO.OUT)
-            GPIO.setup(self.STEPMINUS[i], GPIO.OUT)
-            GPIO.setup(self.DIRPLUS[i], GPIO.OUT)
-            GPIO.setup(self.DIRMINUS[i], GPIO.OUT)
-            GPIO.setup(self.ENBPLUS[i], GPIO.OUT)
-            GPIO.setup(self.ENBMINUS[i], GPIO.OUT)
+            GPIO.setup(self.STEP_PLUS[i], GPIO.OUT)
+            GPIO.setup(self.STEP_MINUS[i], GPIO.OUT)
+            GPIO.setup(self.DIR_PLUS[i], GPIO.OUT)
+            GPIO.setup(self.DIR_MINUS[i], GPIO.OUT)
+            GPIO.setup(self.ENB_PLUS[i], GPIO.OUT)
+            GPIO.setup(self.ENB_MINUS[i], GPIO.OUT)
             GPIO.setup(self.SENSOR[i], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+        # noinspection PyBroadException
         try:
             for i in range(3):
-                GPIO.output(self.ENBMINUS[i], GPIO.LOW)
-                GPIO.output(self.STEPMINUS[i], GPIO.LOW)
-                GPIO.output(self.DIRMINUS[i], GPIO.LOW)
+                GPIO.output(self.ENB_MINUS[i], GPIO.LOW)
+                GPIO.output(self.STEP_MINUS[i], GPIO.LOW)
+                GPIO.output(self.DIR_MINUS[i], GPIO.LOW)
 
-            GPIO.output(self.ENBPLUS, GPIO.LOW)
+            GPIO.output(self.ENB_PLUS, GPIO.LOW)
 
             if directions[0] == "b":
-                GPIO.output(self.DIRPLUS[0], GPIO.LOW)
+                GPIO.output(self.DIR_PLUS[0], GPIO.LOW)
             elif directions[0] == "f":
-                GPIO.output(self.DIRPLUS[0], GPIO.HIGH)
+                GPIO.output(self.DIR_PLUS[0], GPIO.HIGH)
             if directions[1] == "f":
-                GPIO.output(self.DIRPLUS[1], GPIO.LOW)
+                GPIO.output(self.DIR_PLUS[1], GPIO.LOW)
             elif directions[1] == "b":
-                GPIO.output(self.DIRPLUS[1], GPIO.HIGH)
+                GPIO.output(self.DIR_PLUS[1], GPIO.HIGH)
             if directions[2] == "f":
-                GPIO.output(self.DIRPLUS[2], GPIO.LOW)
+                GPIO.output(self.DIR_PLUS[2], GPIO.LOW)
             elif directions[2] == "b":
-                GPIO.output(self.DIRPLUS[2], GPIO.HIGH)
+                GPIO.output(self.DIR_PLUS[2], GPIO.HIGH)
 
             # delay = 50 / 1000 / 1000
             count_of_signals = [0, 0, 0]
@@ -127,16 +128,16 @@ class Server:
                 # включаем сигнал step по тем осям, которые надо двигать
                 for j in range(3):
                     if steps[j] > 0:
-                        GPIO.output(self.STEPPLUS[j], GPIO.HIGH)
+                        GPIO.output(self.STEP_PLUS[j], GPIO.HIGH)
                 time.sleep(self.delay)
                 for j in range(3):
                     if steps[j] > 0:
-                        GPIO.output(self.STEPPLUS[j], GPIO.LOW)
+                        GPIO.output(self.STEP_PLUS[j], GPIO.LOW)
                         steps[j] -= 1
-                        if (directions[j] == "b"):
+                        if directions[j] == "b":
                             signal = GPIO.input(self.SENSOR[j])
-                            if (count_of_signals[j] < self.max_count_signals):
-                                if (signal == 0):
+                            if count_of_signals[j] < self.max_count_signals:
+                                if signal == 0:
                                     count_of_signals[j] += 1
                                 else:
                                     count_of_signals[j] = 0
@@ -144,16 +145,16 @@ class Server:
                                 print("error breaking")
                                 steps[j] = 0
                                 # print(steps)
-                                if (max(steps) == 0):
+                                if max(steps) == 0:
                                     breaking = True
                                     break
                 time.sleep(self.delay)
-                if (breaking == True):
+                if breaking:
                     break
             print("finish init")
         except KeyboardInterrupt:
             print("Keyboard interrupt")
-        except:
+        except Exception:
             print("some error")
         finally:
             print("clean up")
@@ -166,48 +167,49 @@ class Server:
         z = self.coordZ + json_obj["z"]
         xyz = [x, y, z]
 
-        if (self.status == "error"):
+        if self.status == "error":
             err_response = await self.getjson(self.coordX, self.coordY, self.coordZ, "err_server")
             return err_response
 
-        if (self.status == "inited"):
-            if (x < 0 or x > self.limitX or y < 0 or y > self.limitY or z < 0 or z > self.limitZ):
+        if self.status == "inited":
+            if x < 0 or x > self.limitX or y < 0 or y > self.limitY or z < 0 or z > self.limitZ:
                 err_response = await self.getjson(self.coordX, self.coordY, self.coordZ, "err_coord")
                 return err_response
 
         GPIO.setmode(GPIO.BOARD)
 
         for i in range(3):
-            GPIO.setup(self.STEPPLUS[i], GPIO.OUT)
-            GPIO.setup(self.STEPMINUS[i], GPIO.OUT)
-            GPIO.setup(self.DIRPLUS[i], GPIO.OUT)
-            GPIO.setup(self.DIRMINUS[i], GPIO.OUT)
-            GPIO.setup(self.ENBPLUS[i], GPIO.OUT)
-            GPIO.setup(self.ENBMINUS[i], GPIO.OUT)
+            GPIO.setup(self.STEP_PLUS[i], GPIO.OUT)
+            GPIO.setup(self.STEP_MINUS[i], GPIO.OUT)
+            GPIO.setup(self.DIR_PLUS[i], GPIO.OUT)
+            GPIO.setup(self.DIR_MINUS[i], GPIO.OUT)
+            GPIO.setup(self.ENB_PLUS[i], GPIO.OUT)
+            GPIO.setup(self.ENB_MINUS[i], GPIO.OUT)
             GPIO.setup(self.SENSOR[i], GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+        # noinspection PyBroadException
         try:
             for i in range(3):
-                GPIO.output(self.ENBMINUS[i], GPIO.LOW)
-                GPIO.output(self.STEPMINUS[i], GPIO.LOW)
-                GPIO.output(self.DIRMINUS[i], GPIO.LOW)
+                GPIO.output(self.ENB_MINUS[i], GPIO.LOW)
+                GPIO.output(self.STEP_MINUS[i], GPIO.LOW)
+                GPIO.output(self.DIR_MINUS[i], GPIO.LOW)
 
-            GPIO.output(self.ENBPLUS, GPIO.LOW)
+            GPIO.output(self.ENB_PLUS, GPIO.LOW)
             directions = [await self.getdir(json_obj["x"]), await self.getdir(json_obj["y"]),
                           await self.getdir(json_obj["z"])]
 
             if directions[0] == "b":
-                GPIO.output(self.DIRPLUS[0], GPIO.LOW)
+                GPIO.output(self.DIR_PLUS[0], GPIO.LOW)
             elif directions[0] == "f":
-                GPIO.output(self.DIRPLUS[0], GPIO.HIGH)
+                GPIO.output(self.DIR_PLUS[0], GPIO.HIGH)
             if directions[1] == "f":
-                GPIO.output(self.DIRPLUS[1], GPIO.LOW)
+                GPIO.output(self.DIR_PLUS[1], GPIO.LOW)
             elif directions[1] == "b":
-                GPIO.output(self.DIRPLUS[1], GPIO.HIGH)
+                GPIO.output(self.DIR_PLUS[1], GPIO.HIGH)
             if directions[2] == "f":
-                GPIO.output(self.DIRPLUS[2], GPIO.LOW)
+                GPIO.output(self.DIR_PLUS[2], GPIO.LOW)
             elif directions[2] == "b":
-                GPIO.output(self.DIRPLUS[2], GPIO.HIGH)
+                GPIO.output(self.DIR_PLUS[2], GPIO.HIGH)
 
             steps = [abs(json_obj["x"]) * 2, abs(json_obj["y"]) * 2, abs(json_obj["z"]) * 2]
             # delay = 50 / 1000 / 1000
@@ -221,11 +223,11 @@ class Server:
                 # включаем сигнал step по тем осям, которые надо двигать
                 for j in range(3):
                     if steps[j] > 0:
-                        GPIO.output(self.STEPPLUS[j], GPIO.HIGH)
+                        GPIO.output(self.STEP_PLUS[j], GPIO.HIGH)
                 time.sleep(self.delay)
                 for j in range(3):
                     if steps[j] > 0:
-                        GPIO.output(self.STEPPLUS[j], GPIO.LOW)
+                        GPIO.output(self.STEP_PLUS[j], GPIO.LOW)
                         steps[j] -= 1
                         if (directions[j] == "b"):
                             signal = GPIO.input(self.SENSOR[j])
@@ -235,14 +237,14 @@ class Server:
                                 else:
                                     count_of_signals[j] = 0
                             else:
-                                print("error breaking")
+                                print("end cap activate (axis {})".format(j))
                                 xyz[j] += int(steps[j] / 2)
                                 steps[j] = 0
                 time.sleep(self.delay)
 
         except KeyboardInterrupt:
             print("Keyboard interrupt")
-        except:
+        except Exception:
             print("some error")
         finally:
             print("clean up")

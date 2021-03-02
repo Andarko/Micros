@@ -20,6 +20,7 @@ from lxml import etree
 from SettingsDialog import SettingsDialog, ProgramSettings
 import xml.etree.ElementTree as XmlET
 import scan
+import export_img_dialog
 # import ScanWindow from scan
 
 
@@ -603,10 +604,17 @@ class MainWindow(QMainWindow):
         self.scan_window = scan.ScanWindow(self)
         # self.scan_window.setAttribute(Qt.WA_DeleteOnClose)
         self.savedData = SavedData("")
+
         self.view_menu_main_panel = QAction()
         self.services_menu_all_in_memory = QAction()
         self.services_menu_settings = QAction()
+
+        self.scale_edit = QDoubleSpinBox()
+        self.im_label = QLabel()
+        self.right_doc_widget = QDockWidget("Инструменты", self)
+
         self.init_ui()
+
         self.EXTRACT_TEMP_FOLDER = os.path.join(tempfile.gettempdir(), "Micros")
         self.EXTRACT_TEMP_SUB_FOLDER = ""
         self.imageView = ImageView(self.savedData)
@@ -714,7 +722,6 @@ class MainWindow(QMainWindow):
         central_layout = QVBoxLayout()
         main_widget.setLayout(central_layout)
         # self.im_label = ClickedLabel()
-        self.im_label = QLabel()
 
         # img2 = cv2.imread("/home/krasnov/Pictures/схема_Уберподробно/beforeRotate/2_7.jpg",
         # cv2.IMREAD_COLOR)[:, :, ::-1]
@@ -780,18 +787,12 @@ class MainWindow(QMainWindow):
         central_layout.addWidget(message_edit)
         # main_layout.addLayout(central_layout)
         # Правые элементы
-        self.right_doc_widget = QDockWidget("Dock Widget", self)
         self.right_doc_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         right_layout = QVBoxLayout(self)
 
-        btn31 = QPushButton("MegaImg", self)
-        btn31.clicked.connect(self.btn31_click)
-        btn32 = QPushButton("Prepare", self)
-        btn32.clicked.connect(self.prepare_scans)
-        btn33 = QPushButton("View", self)
-        right_layout.addWidget(btn31)
-        right_layout.addWidget(btn32)
-        right_layout.addWidget(btn33)
+        btn_export_img = QPushButton("Экспорт изображения", self)
+        btn_export_img.clicked.connect(self.btn_export_img_click)
+        right_layout.addWidget(btn_export_img)
 
         minimap_check_box = QCheckBox("Мини-изображение", self)
         minimap_check_box.stateChanged.connect(self.minimap_check_box_changed)
@@ -806,7 +807,6 @@ class MainWindow(QMainWindow):
         right_layout.addSpacing(50)
 
         lab_scale = QLabel("Увеличение")
-        self.scale_edit = QDoubleSpinBox()
         self.scale_edit.setMinimum(0.001)
         self.scale_edit.setMaximum(10.0)
         self.scale_edit.setValue(1.0)
@@ -1077,7 +1077,7 @@ class MainWindow(QMainWindow):
     def prepare_scans(self):
         self.modified = self.savedData.prepare_scans(True)
 
-    def btn31_click(self):
+    def btn_export_img_click(self):
         img_size = Size()
         img_size.width = 3000
         img_size.height = 4000
