@@ -353,6 +353,7 @@ class ScanWindow(QMainWindow):
         self.control_elements_enabled(False)
         self.table_controller.coord_init()
         self.setWindowTitle(str(self.table_controller))
+        self.coord_move(self.table_controller.coord_step, mode="discrete", crop=True)
         self.control_elements_enabled(True)
 
     def device_check(self):
@@ -466,6 +467,7 @@ class ScanWindow(QMainWindow):
             # previous_direction = None
             direction = Direction()
             while direction.abs_index < 6:
+                print(direction)
                 # Параметр захода за середину для ускорения обхода (от 0 до 4)
                 forward_over_move = 4
                 forward_count_total = 0
