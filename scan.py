@@ -257,11 +257,11 @@ class ScanWindow(QMainWindow):
     snap_height = property(__get_snap_height)
 
     def __get_snap_width_mm(self):
-        return self.snap_width / self.pixels_in_mm
+        return self.snap_width / self.pixels_in_mm[0]
     snap_width_mm = property(__get_snap_width_mm)
 
     def __get_snap_height_mm(self):
-        return self.snap_height / self.pixels_in_mm
+        return self.snap_height / self.pixels_in_mm[1]
     snap_height_mm = property(__get_snap_height_mm)
 
     def __get_work_height(self):
@@ -293,11 +293,11 @@ class ScanWindow(QMainWindow):
     #     return self.program_settings.snap_settings.frame[3] - self.program_settings.snap_settings.frame[1]
 
     def __get_frame_width_mm(self):
-        return self.frame_width / self.pixels_in_mm
+        return self.frame_width / self.pixels_in_mm[0]
     frame_width_mm = property(__get_frame_width_mm)
 
     def __get_frame_height_mm(self):
-        return self.frame_height / self.pixels_in_mm
+        return self.frame_height / self.pixels_in_mm[1]
     frame_height_mm = property(__get_frame_height_mm)
 
     # Тестовая обертка функции движения, чтобы обходиться без подключенного станка
@@ -313,11 +313,11 @@ class ScanWindow(QMainWindow):
             #                                    int(self.pixels_in_mm * (self.table_controller.coord_mm[1]
             #                                                             + self.snap_height_mm_half)),
             #                                    crop=crop)
-            snap = self.micros_controller.snap(int(self.pixels_in_mm * (self.table_controller.coord_mm[0])),
-                                               int(self.pixels_in_mm * (self.table_controller.coord_mm[1])),
-                                               int(self.pixels_in_mm * (self.table_controller.coord_mm[0]
+            snap = self.micros_controller.snap(int(self.pixels_in_mm[0] * (self.table_controller.coord_mm[0])),
+                                               int(self.pixels_in_mm[1] * (self.table_controller.coord_mm[1])),
+                                               int(self.pixels_in_mm[0] * (self.table_controller.coord_mm[0]
                                                                         + self.snap_width_mm)),
-                                               int(self.pixels_in_mm * (self.table_controller.coord_mm[1]
+                                               int(self.pixels_in_mm[1] * (self.table_controller.coord_mm[1]
                                                                         + self.snap_height_mm)),
                                                crop=crop)
             self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(snap))
@@ -507,8 +507,8 @@ class ScanWindow(QMainWindow):
                                 break
                             # Проверяем - не вышли ли мы за пределы стола
                             while True:
-                                x += int(self.delta_x * correction_count * previous_direction[0] / self.pixels_in_mm)
-                                y -= int(self.delta_y * correction_count * previous_direction[1] / self.pixels_in_mm)
+                                x += int(self.delta_x * correction_count * previous_direction[0] / self.pixels_in_mm[0])
+                                y -= int(self.delta_y * correction_count * previous_direction[1] / self.pixels_in_mm[1])
                                 if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
                                         self.table_controller.limits_mm[1]:
                                     x = all_x[-1]
@@ -538,8 +538,8 @@ class ScanWindow(QMainWindow):
                     if forward_count > 0:
                         # Проверяем - не вышли ли мы за пределы стола
                         while True:
-                            x += int(self.delta_x * direction[0] * forward_count / self.pixels_in_mm)
-                            y -= int(self.delta_y * direction[1] * forward_count / self.pixels_in_mm)
+                            x += int(self.delta_x * direction[0] * forward_count / self.pixels_in_mm[0])
+                            y -= int(self.delta_y * direction[1] * forward_count / self.pixels_in_mm[1])
                             if x < 0 or y < 0 or x > self.table_controller.limits_mm[0] or y > \
                                     self.table_controller.limits_mm[1]:
                                 x = all_x[-1]
@@ -563,8 +563,8 @@ class ScanWindow(QMainWindow):
                         if forward_count_total > forward_over_move:
                             all_x.pop()
                             all_y.pop()
-                            x += int(self.delta_x * direction[0] * (-forward_over_move) / self.pixels_in_mm)
-                            y -= int(self.delta_y * direction[1] * (-forward_over_move) / self.pixels_in_mm)
+                            x += int(self.delta_x * direction[0] * (-forward_over_move) / self.pixels_in_mm[0])
+                            y -= int(self.delta_y * direction[1] * (-forward_over_move) / self.pixels_in_mm[1])
                             all_x.append(x)
                             all_y.append(y)
                             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)

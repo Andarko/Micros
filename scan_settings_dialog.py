@@ -21,7 +21,7 @@ class MicrosSettings(object):
 class SnapSettings(object):
     def __init__(self, name=""):
         self.name = name
-        self.pixels_in_mm = 10.0
+        self.pixels_in_mm = [10.0, 10.0]
         self.snap_width = 200
         self.snap_height = 100
         self.offset = [0, 0, 0, 0]
@@ -124,7 +124,10 @@ class ProgramSettings(object):
                 obj_mode_of_bottom = XmlET.SubElement(obj_mode_of, "Bottom")
                 obj_mode_of_bottom.text = str(mode.offset[3])
                 obj_mode_pixels = XmlET.SubElement(obj_mode, "PixelsInMM")
-                obj_mode_pixels.text = str(mode.pixels_in_mm)
+                obj_mode_pixels_x = XmlET.SubElement(obj_mode_pixels, "X")
+                obj_mode_pixels_x.text = str(mode.pixels_in_mm[0])
+                obj_mode_pixels_y = XmlET.SubElement(obj_mode_pixels, "Y")
+                obj_mode_pixels_y.text = str(mode.pixels_in_mm[1])
                 obj_mode_work_height = XmlET.SubElement(obj_mode, "WorkHeightMM")
                 obj_mode_work_height.text = str(mode.work_height)
                 obj_mode_focus = XmlET.SubElement(obj_mode, "Focus")
@@ -204,7 +207,11 @@ class ProgramSettings(object):
                                             elif element_offset.tag == "Bottom":
                                                 new_snap_settings.offset[3] = int(element_offset.text)
                                     elif element_mode.tag == "PixelsInMM":
-                                        new_snap_settings.pixels_in_mm = float(element_mode.text)
+                                        for element_mode_pixels in element_mode.getchildren():
+                                            if element_mode_pixels.tag == "X":
+                                                new_snap_settings.pixels_in_mm[0] = float(element_mode_pixels.text)
+                                            elif element_mode_pixels.tag == "Y":
+                                                new_snap_settings.pixels_in_mm[1] = float(element_mode_pixels.text)
                                     elif element_mode.tag == "WorkHeightMM":
                                         new_snap_settings.work_height = float(element_mode.text)
                                     elif element_mode.tag == "Focus":
@@ -234,7 +241,8 @@ class SettingsDialog(QDialog):
         self.edt_offset_right = QSpinBox()
         self.edt_offset_top = QSpinBox()
         self.edt_offset_bottom = QSpinBox()
-        self.edt_pixels_in_mm = QDoubleSpinBox()
+        self.edt_pixels_in_mm_x = QDoubleSpinBox()
+        self.edt_pixels_in_mm_y = QDoubleSpinBox()
         self.edt_work_height = QDoubleSpinBox()
         self.edt_focus = QLineEdit()
         self.edt_zoom = QLineEdit()
@@ -332,23 +340,26 @@ class SettingsDialog(QDialog):
         layout_offset.addRow(QLabel("Размер отступа снизу"), self.edt_offset_bottom)
         self.edt_offset_bottom.valueChanged.connect(self.edits_mode_changed)
 
-        self.edt_pixels_in_mm.setButtonSymbols(QAbstractSpinBox.NoButtons)
-        self.edt_pixels_in_mm.setSingleStep(0)
-        self.edt_pixels_in_mm.setMinimum(1.000)
-        self.edt_pixels_in_mm.setMaximum(9999.999)
-        self.edt_pixels_in_mm.setValue(1.0)
-        self.edt_pixels_in_mm.setSingleStep(0.0)
-        self.edt_pixels_in_mm.setDecimals(3)
-        self.edt_pixels_in_mm.valueChanged.connect(self.edits_mode_changed)
-        layout_offset.addRow(QLabel("Пикселей на мм"), self.edt_pixels_in_mm)
-        self.edt_work_height.setButtonSymbols(QAbstractSpinBox.NoButtons)
-        self.edt_work_height.setSingleStep(0)
-        self.edt_work_height.setMinimum(1.000)
-        self.edt_work_height.setMaximum(9999.999)
-        self.edt_work_height.setValue(1.0)
-        self.edt_work_height.setSingleStep(0.0)
-        self.edt_work_height.setDecimals(3)
-        self.edt_work_height.valueChanged.connect(self.edits_mode_changed)
+        for edt_double in [self.edt_pixels_in_mm_x, self.edt_pixels_in_mm_y, self.edt_work_height]:
+            edt_double.setButtonSymbols(QAbstractSpinBox.NoButtons)
+            edt_double.setSingleStep(0)
+            edt_double.setMinimum(1.000)
+            edt_double.setMaximum(9999.999)
+            edt_double.setValue(1.0)
+            edt_double.setSingleStep(0.0)
+            edt_double.setDecimals(3)
+            edt_double.valueChanged.connect(self.edits_mode_changed)
+
+        layout_offset.addRow(QLabel("Пикселей на мм (гор.)"), self.edt_pixels_in_mm_x)
+        layout_offset.addRow(QLabel("Пикселей на мм (верт.)"), self.edt_pixels_in_mm_y)
+        # self.edt_work_height.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        # self.edt_work_height.setSingleStep(0)
+        # self.edt_work_height.setMinimum(1.000)
+        # self.edt_work_height.setMaximum(9999.999)
+        # self.edt_work_height.setValue(1.0)
+        # self.edt_work_height.setSingleStep(0.0)
+        # self.edt_work_height.setDecimals(3)
+        # self.edt_work_height.valueChanged.connect(self.edits_mode_changed)
         layout_offset.addRow(QLabel("Высота работы камеры, мм"), self.edt_work_height)
         layout_offset.addRow(QLabel("Фокус"), self.edt_focus)
         self.edt_focus.textChanged.connect(self.edits_mode_changed)
@@ -411,7 +422,8 @@ class SettingsDialog(QDialog):
             self.program_settings.snap_settings.offset[1] = self.edt_offset_top.value()
             self.program_settings.snap_settings.offset[2] = self.edt_offset_right.value()
             self.program_settings.snap_settings.offset[3] = self.edt_offset_bottom.value()
-            self.program_settings.snap_settings.pixels_in_mm = self.edt_pixels_in_mm.value()
+            self.program_settings.snap_settings.pixels_in_mm[0] = self.edt_pixels_in_mm_x.value()
+            self.program_settings.snap_settings.pixels_in_mm[1] = self.edt_pixels_in_mm_y.value()
             self.program_settings.snap_settings.work_height = self.edt_work_height.value()
             self.program_settings.snap_settings.focus = self.edt_focus.text()
             self.program_settings.snap_settings.zoom = self.edt_zoom.text()
@@ -477,7 +489,8 @@ class SettingsDialog(QDialog):
         self.edt_offset_top.setValue(snap_settings.offset[1])
         self.edt_offset_right.setValue(snap_settings.offset[2])
         self.edt_offset_bottom.setValue(snap_settings.offset[3])
-        self.edt_pixels_in_mm.setValue(snap_settings.pixels_in_mm)
+        self.edt_pixels_in_mm_x.setValue(snap_settings.pixels_in_mm[0])
+        self.edt_pixels_in_mm_y.setValue(snap_settings.pixels_in_mm[1])
         self.edt_work_height.setValue(snap_settings.work_height)
         self.edt_focus.setText(snap_settings.focus)
         self.edt_zoom.setText(snap_settings.zoom)
