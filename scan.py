@@ -12,7 +12,8 @@ import websockets
 from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QWidget, QMainWindow, QSizePolicy, QFileDialog, QMessageBox
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
-from PyQt5.QtWidgets import QAction, QInputDialog, QLineEdit, QLabel, QPushButton, QTextEdit, QFormLayout
+from PyQt5.QtWidgets import QAction, QInputDialog, QLineEdit, QLabel, QPushButton, QSpinBox, QFormLayout
+from PyQt5.QtWidgets import QAbstractSpinBox
 from PyQt5.QtCore import QEvent, Qt
 import numpy as np
 import cv2
@@ -103,10 +104,10 @@ class ScanWindow(QMainWindow):
         self.btn_move_mid = QPushButton("Двигать в середину")
         self.btn_move = QPushButton("Двигать в ...")
         self.btn_manual = QPushButton("Ручной режим")
-        self.edt_border_x1 = QTextEdit()
-        self.edt_border_y1 = QTextEdit()
-        self.edt_border_x2 = QTextEdit()
-        self.edt_border_y2 = QTextEdit()
+        self.edt_border_x1 = QSpinBox()
+        self.edt_border_y1 = QSpinBox()
+        self.edt_border_x2 = QSpinBox()
+        self.edt_border_y2 = QSpinBox()
         self.btn_border = QPushButton("Определить границы")
         self.btn_scan = QPushButton("Новая съемка")
         self.btn_save_scan = QPushButton("Сохранить съемку")
@@ -198,10 +199,17 @@ class ScanWindow(QMainWindow):
         # border_form_layout = QGridLayout()
         border_form_layout = QFormLayout()
         # self.edt_border_x1.setWordWrapMode(QtGui.QTextOption.NoWrap)
-        self.edt_border_x1.setMaximumHeight(30)
-        self.edt_border_y1.setMaximumHeight(30)
-        self.edt_border_x2.setMaximumHeight(30)
-        self.edt_border_y2.setMaximumHeight(30)
+        for edt in [self.edt_border_x1, self.edt_border_y1, self.edt_border_x2, self.edt_border_y2]:
+            edt.setMaximumHeight(30)
+            edt.setMinimum(0)
+            edt.setSuffix(" mm")
+            edt.setButtonSymbols(QAbstractSpinBox.NoButtons)
+            edt.setSingleStep(0)
+
+        self.edt_border_x1.setMaximum(self.program_settings.table_settings.limits_mm[0])
+        self.edt_border_x2.setMaximum(self.program_settings.table_settings.limits_mm[0])
+        self.edt_border_y1.setMaximum(self.program_settings.table_settings.limits_mm[1])
+        self.edt_border_y2.setMaximum(self.program_settings.table_settings.limits_mm[1])
 
         border_form_layout.addRow(QLabel("x1"), self.edt_border_x1)
         border_form_layout.addRow(QLabel("y1"), self.edt_border_y1)
@@ -565,10 +573,10 @@ class ScanWindow(QMainWindow):
                 # previous_direction = direction
                 direction = direction.next()
 
-            self.edt_border_x1.setText(str(min(all_x)))
-            self.edt_border_y1.setText(str(min(all_y)))
-            self.edt_border_x2.setText(str(max(all_x)))
-            self.edt_border_y2.setText(str(max(all_y)))
+            self.edt_border_x1.setValue(str(min(all_x)))
+            self.edt_border_y1.setValue(str(min(all_y)))
+            self.edt_border_x2.setValue(str(max(all_x)))
+            self.edt_border_y2.setValue(str(max(all_y)))
         except Exception as e:
             raise
             QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + str(e),
@@ -687,12 +695,8 @@ class ScanWindow(QMainWindow):
             elif dlg_result == QMessageBox.Cancel:
                 return
         try:
-            coord = [float(self.edt_border_x1.toPlainText()), float(self.edt_border_y1.toPlainText()),
-                     float(self.edt_border_x2.toPlainText()), float(self.edt_border_y2.toPlainText())]
-            # x1 = float(self.edt_border_x1.toPlainText())
-            # y1 = float(self.edt_border_y1.toPlainText())
-            # x2 = float(self.edt_border_x2.toPlainText())
-            # y2 = float(self.edt_border_y2.toPlainText())
+            coord = [float(self.edt_border_x1.value()), float(self.edt_border_y1.value()),
+                     float(self.edt_border_x2.value()), float(self.edt_border_y2.value())]
         except ValueError:
             print("Неверный формат данных")
             return
@@ -784,10 +788,10 @@ class ScanWindow(QMainWindow):
         # Создание файла описания XML
         root = Xml.Element("Root")
         elem_rc = Xml.Element("RowCount")
-        elem_rc.text = str(int((coord[3] - coord[1]) / self.frame_height_mm) + 1)
+        elem_rc.text = str(count[1])
         root.append(elem_rc)
         elem_cc = Xml.Element("ColCount")
-        elem_cc.text = str(int((coord[2] - coord[0]) / self.frame_width_mm) + 1)
+        elem_cc.text = str(count[0])
         root.append(elem_cc)
         elem_img = Xml.Element("Image")
         root.append(elem_img)
@@ -795,25 +799,25 @@ class ScanWindow(QMainWindow):
         img_format.text = "jpg"
         img_size = Xml.SubElement(elem_img, "ImgSize")
         img_size_width = Xml.SubElement(img_size, "Width")
-        img_size_width.text = str(int(self.snap_width_mm * self.pixels_in_mm))
+        img_size_width.text = str(self.snap_width)
         img_size_height = Xml.SubElement(img_size, "Height")
-        img_size_height.text = str(int(self.snap_height_mm * self.pixels_in_mm))
+        img_size_height.text = str(self.snap_height)
         img_con_area = Xml.SubElement(elem_img, "ConnectionArea")
         # HERE orientation param need
         ica_x = Xml.SubElement(img_con_area, "X")
         # ica_x.text = str(self.micros_controller.frame[0])
-        ica_x.text = str(self.program_settings.snap_settings.offset[2])
+        ica_x.text = str(self.program_settings.snap_settings.frame[0])
         ica_y = Xml.SubElement(img_con_area, "Y")
         # ica_y.text = str(self.micros_controller.frame[1])
-        ica_y.text = str(self.program_settings.snap_settings.offset[3])
+        ica_y.text = str(self.program_settings.snap_settings.frame[1])
         ica_width = Xml.SubElement(img_con_area, "Width")
         # ica_width.text = str(int(self.frame_width_mm * self.pixels_in_mm))
         ica_width.text = str(self.program_settings.snap_settings.frame[2]
-                             - self.program_settings.snap_settings.offset[2])
+                             - self.program_settings.snap_settings.frame[0])
         ica_height = Xml.SubElement(img_con_area, "Height")
         # ica_height.text = str(int(self.frame_height_mm * self.pixels_in_mm))
         ica_height.text = str(self.program_settings.snap_settings.frame[3]
-                              - self.program_settings.snap_settings.offset[3])
+                              - self.program_settings.snap_settings.frame[1])
 
         tree = Xml.ElementTree(root)
         with open(self.path_for_xml_file, "w"):

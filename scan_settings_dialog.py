@@ -71,15 +71,18 @@ class ProgramSettings(object):
             #     self.file_unsaved = True
             settings.default = False
         if snap_settings:
+            if not snap_settings.default:
+                self.file_unsaved = True
             snap_settings.default = True
         else:
+            if self.snap_settings.default:
+                self.file_unsaved = True
             self.snap_settings.default = True
 
     # Сохранение настроек в файл
     def save_settings_from_xml(self, file_name):
         # if self.test:
         #     return
-        print("Save To File")
         root = XmlET.Element("Settings")
 
         element_table = XmlET.Element("Table")
@@ -135,10 +138,11 @@ class ProgramSettings(object):
         tree = XmlET.ElementTree(root)
         with open(file_name, "w"):
             tree.write(file_name)
+        print("Settings Saved To File")
 
     # Загрузка настроек из файла
     def load_settings_from_xml(self, file_name):
-        print("Load From File")
+        print("Settings Load From File")
         with open(file_name) as fileObj:
             xml = fileObj.read()
         root = etree.fromstring(xml)
@@ -188,7 +192,7 @@ class ProgramSettings(object):
                                 for element_mode in element_micros.getchildren():
                                     if element_mode.tag == "Default" and element_mode.text == "True":
                                         new_snap_settings.default = True
-                                        # self.snap_settings = new_snap_settings
+                                        self.snap_settings = new_snap_settings
                                     elif element_mode.tag == "Offset":
                                         for element_offset in element_mode.getchildren():
                                             if element_offset.tag == "Left":
@@ -377,7 +381,6 @@ class SettingsDialog(QDialog):
             self.accept()
 
     def accept_prop(self):
-        print("Accept Dialog")
         self.edits_res_save()
         self.edits_mode_save()
         # if self.file_unsaved:
@@ -443,6 +446,7 @@ class SettingsDialog(QDialog):
         self.edt_res_width.setValue(micros_settings.resolution.width())
         self.edt_res_height.setValue(micros_settings.resolution.height())
         self.combo_modes.clear()
+        self.combo_modes.currentIndexChanged.disconnect(self.combo_modes_changed)
         for mode in micros_settings.all_snap_settings:
             self.combo_modes.addItem(mode.name)
         i = -1
@@ -452,6 +456,7 @@ class SettingsDialog(QDialog):
                 self.combo_modes.setCurrentIndex(i)
                 self.load_mode_settings_to_ui(self.program_settings.snap_settings)
         self.edits_res_unsaved = False
+        self.combo_modes.currentIndexChanged.connect(self.combo_modes_changed)
         # self.combo_changes = False
 
     def load_mode_settings_to_ui(self, snap_settings: SnapSettings):

@@ -163,7 +163,7 @@ class Server:
         except Exception:
             print("some error")
         finally:
-            print("clean up")
+            # print("clean up")
             GPIO.cleanup()
 
     async def move_xyz(self, json_obj):
@@ -249,7 +249,7 @@ class Server:
         except Exception:
             print("some error")
         finally:
-            print("clean up")
+            # print("clean up")
             GPIO.cleanup()
 
         self.coord[0] = xyz[0]
