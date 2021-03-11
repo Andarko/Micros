@@ -64,6 +64,9 @@ class ScanWindow(QMainWindow):
         self.thread_continuous = Thread(target=self.continuous_move)
         self.thread_continuous.start()
 
+        self.thread_video = Thread(target=self.video_thread)
+        self.thread_video.start()
+
         self.dir_for_img = "SavedImg"
         self.path_for_xml_file = os.path.join(self.dir_for_img, "settings.xml")
 
@@ -316,9 +319,9 @@ class ScanWindow(QMainWindow):
             snap = self.micros_controller.snap(int(self.pixels_in_mm[0] * (self.table_controller.coord_mm[0])),
                                                int(self.pixels_in_mm[1] * (self.table_controller.coord_mm[1])),
                                                int(self.pixels_in_mm[0] * (self.table_controller.coord_mm[0]
-                                                                        + self.snap_width_mm)),
+                                                                           + self.snap_width_mm)),
                                                int(self.pixels_in_mm[1] * (self.table_controller.coord_mm[1]
-                                                                        + self.snap_height_mm)),
+                                                                           + self.snap_height_mm)),
                                                crop=crop)
             self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(snap))
             self.lbl_img.repaint()
@@ -912,6 +915,13 @@ class ScanWindow(QMainWindow):
             else:
                 time.sleep(1)
 
+    def video_thread(self):
+        while True:
+            self.micros_controller.video_check, self.micros_controller.video_img \
+                = self.micros_controller.video_stream.read()
+            self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(self.micros_controller.video_img))
+            self.lbl_img.repaint()
+
 
 # Класс направления - умеет выдавать следующее и предыдущее направление
 class Direction:
@@ -991,15 +1001,18 @@ class MicrosController:
         self.test = test
         # self.frame = list()
         self.program_settings: ProgramSettings = program_settings
+        self.video_img = None
+        self.video_check = False
 
         if not self.test:
-            max_video_streams = 10
+            max_video_streams = 6
             video_stream_index = -1
             # vs = VideoStream(src=video_stream_index).start()
             check_next_stream = True
             while check_next_stream:
                 video_stream_index += 1
                 if video_stream_index > max_video_streams:
+                    time.sleep(1.0)
                     video_stream_index = 0
 
                 # self.video_stream = VideoStream(src=video_stream_index).start()
@@ -1011,14 +1024,15 @@ class MicrosController:
 
                 # noinspection PyBroadException
                 try:
-                    check_read, img = self.video_stream.read()
-                    if not check_read:
+                    self.video_check, self.video_img = self.video_stream.read()
+                    if not self.video_check:
                         continue
                     # check_frame = img[:, :, :]
                     check_next_stream = False
                 except Exception:
                     # self.video_stream.stop()
                     check_next_stream = True
+
 
     def __get_frame(self):
         return self.program_settings.snap_settings.frame
