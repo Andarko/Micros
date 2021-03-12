@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QWidget, QMainWindow, QSizePolicy, QFileDialog, QMes
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
 from PyQt5.QtWidgets import QAction, QInputDialog, QLineEdit, QLabel, QPushButton, QSpinBox, QFormLayout
 from PyQt5.QtWidgets import QAbstractSpinBox
-from PyQt5.QtCore import QEvent, Qt
+from PyQt5.QtCore import QEvent, Qt, QTimer
 import numpy as np
 import cv2
 import datetime
@@ -22,7 +22,7 @@ import zipfile
 
 from PyQt5 import QtGui
 from vassal import Terminal
-from threading import Thread
+from threading import Thread, Timer
 import json
 import xml.etree.ElementTree as Xml
 
@@ -43,7 +43,8 @@ class ScanWindow(QMainWindow):
         self.program_settings = ProgramSettings(test)
         self.table_controller = TableController(self.loop, self.program_settings, test)
         # TEST Для удобства тестирования передаю в контроллер стола контроллер камеры
-        self.micros_controller = MicrosController(self.program_settings, test)
+        self.lbl_img = QLabel()
+        self.micros_controller = MicrosController(self.program_settings, test, self.lbl_img)
         # if self.table_controller.test:
         #     self.table_controller.micros_controller = self.micros_controller
         #     self.table_controller.program_settings = self.program_settings
@@ -65,8 +66,8 @@ class ScanWindow(QMainWindow):
         self.thread_continuous = Thread(target=self.continuous_move)
         self.thread_continuous.start()
 
-        self.thread_video = Thread(target=self.video_thread)
-        self.thread_video.start()
+        # self.thread_video = Thread(target=self.video_thread)
+        # self.thread_video.start()
 
         self.dir_for_img = "SavedImg"
         self.path_for_xml_file = os.path.join(self.dir_for_img, "settings.xml")
@@ -102,7 +103,6 @@ class ScanWindow(QMainWindow):
             print("Внимание! Программа работает в тестовом режиме!")
 
         # Доступные для взаимодействия компоненты формы
-        self.lbl_img = QLabel()
         self.lbl_coord = QLabel("Текущие координаты:")
         self.btn_init = QPushButton("Инициализация")
         self.btn_move_mid = QPushButton("Двигать в середину")
@@ -916,11 +916,11 @@ class ScanWindow(QMainWindow):
             else:
                 time.sleep(1)
 
-    def video_thread(self):
-        while True:
-            self.micros_controller.video_check, self.micros_controller.video_img \
-                = self.micros_controller.video_stream.read()
-            self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(self.micros_controller.video_img))
+    # def video_thread(self):
+    #     while True:
+    #         self.micros_controller.video_check, self.micros_controller.video_img \
+    #             = self.micros_controller.video_stream.read()
+    #         self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(self.micros_controller.video_img))
             # self.lbl_img.repaint()
 
 
@@ -994,16 +994,18 @@ class KeyboardButton:
 
 # Класс управления микроскопом (пока тестовая подделка)
 class MicrosController:
-    def __init__(self, program_settings: ProgramSettings, test: bool):
-        self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_3.jpg"
-        # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
-        # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
-        self.test_img = cv2.imread(self.test_img_path)[:, :, :]
+    def __init__(self, program_settings: ProgramSettings, test: bool, lbl_img: QLabel):
+        if test:
+            self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_3.jpg"
+            # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
+            # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
+            self.test_img = cv2.imread(self.test_img_path)[:, :, :]
         self.test = test
         # self.frame = list()
         self.program_settings: ProgramSettings = program_settings
         self.video_img = None
         self.video_check = False
+        self.lbl_img = lbl_img
 
         if not self.test:
             max_video_streams = 6
@@ -1033,6 +1035,16 @@ class MicrosController:
                 except Exception:
                     # self.video_stream.stop()
                     check_next_stream = True
+
+            self.video_fps = 60
+            self.video_timer = QTimer()
+            self.video_timer.timeout.connect(self.next_video_frame)
+            self.video_timer.start(1000. / self.video_fps)
+
+    def next_video_frame(self):
+        self.video_check, self.video_img = self.video_stream.read()
+        self.lbl_img.setPixmap(self.numpy_to_pixmap(self.video_img))
+        self.lbl_img.repaint()
 
     def __get_frame(self):
         return self.program_settings.snap_settings.frame
@@ -1082,18 +1094,22 @@ class MicrosController:
             y1_r = 6400 - y2
             return np.copy(self.test_img[y1_r:y2_r, x1:x2, :])
         else:
+            self.video_timer.stop()
             time.sleep(0.1)
             # for i in range(10):
             #     self.video_stream.read()
-            # check, img = self.video_stream.read()
-
+            # Прогревочные съемки
+            for i in range(10):
+                self.video_stream.read()
+            check, img = self.video_stream.read()
+            self.video_timer.start()
             if crop:
                 # return np.copy(img[self.frame[3]-1:self.frame[1]:-1, self.frame[2]-1:self.frame[0]:-1, :])
                 # return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :][::-1, ::-1, :])
-                return np.copy(self.video_img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :])
+                return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :])
             else:
                 # return np.copy(img[::-1, ::-1, :])
-                return np.copy(self.video_img)
+                return np.copy(img)
 
 
 # Класс, который общается с контроллером станка
