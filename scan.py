@@ -61,6 +61,7 @@ class ScanWindow(QMainWindow):
         self.keyboard_buttons = {Qt.Key_W: KeyboardButton(), Qt.Key_D: KeyboardButton(),
                                  Qt.Key_S: KeyboardButton(), Qt.Key_A: KeyboardButton(),
                                  Qt.Key_Plus: KeyboardButton(), Qt.Key_Minus: KeyboardButton()}
+        # Пока отключу лишний процесс ручного управления temp
         self.thread_continuous = Thread(target=self.continuous_move)
         self.thread_continuous.start()
 
@@ -323,8 +324,8 @@ class ScanWindow(QMainWindow):
                                                int(self.pixels_in_mm[1] * (self.table_controller.coord_mm[1]
                                                                            + self.snap_height_mm)),
                                                crop=crop)
-            self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(snap))
-            self.lbl_img.repaint()
+            # self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(snap))
+            # self.lbl_img.repaint()
             self.setWindowTitle(str(self.table_controller))
             return snap
         return None
@@ -920,7 +921,7 @@ class ScanWindow(QMainWindow):
             self.micros_controller.video_check, self.micros_controller.video_img \
                 = self.micros_controller.video_stream.read()
             self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(self.micros_controller.video_img))
-            self.lbl_img.repaint()
+            # self.lbl_img.repaint()
 
 
 # Класс направления - умеет выдавать следующее и предыдущее направление
@@ -1033,7 +1034,6 @@ class MicrosController:
                     # self.video_stream.stop()
                     check_next_stream = True
 
-
     def __get_frame(self):
         return self.program_settings.snap_settings.frame
     frame = property(__get_frame)
@@ -1083,16 +1083,17 @@ class MicrosController:
             return np.copy(self.test_img[y1_r:y2_r, x1:x2, :])
         else:
             time.sleep(0.1)
-            for i in range(10):
-                self.video_stream.read()
-            check, img = self.video_stream.read()
+            # for i in range(10):
+            #     self.video_stream.read()
+            # check, img = self.video_stream.read()
+
             if crop:
                 # return np.copy(img[self.frame[3]-1:self.frame[1]:-1, self.frame[2]-1:self.frame[0]:-1, :])
                 # return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :][::-1, ::-1, :])
-                return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :])
+                return np.copy(self.video_img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :])
             else:
                 # return np.copy(img[::-1, ::-1, :])
-                return np.copy(img)
+                return np.copy(self.video_img)
 
 
 # Класс, который общается с контроллером станка
