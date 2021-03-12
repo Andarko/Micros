@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QWidget, QMainWindow, QSizePolicy, QFileDialog, QMes
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
 from PyQt5.QtWidgets import QAction, QInputDialog, QLineEdit, QLabel, QPushButton, QSpinBox, QFormLayout
 from PyQt5.QtWidgets import QAbstractSpinBox
-from PyQt5.QtCore import QEvent, Qt, QTimer
+from PyQt5.QtCore import QEvent, Qt, QTimer, QThread
 import numpy as np
 import cv2
 import datetime
@@ -992,9 +992,24 @@ class KeyboardButton:
         return self.clicked
 
 
+class VideoStreamThread(QThread):
+    def __init__(self):
+        QThread.__init__(self)
+
+    def run(self):
+        def work():
+            print("snap")
+        timer = QTimer()
+        timer.timeout.connect(work)
+        timer.start(2000)
+        self.exec_()
+
 # Класс управления микроскопом (пока тестовая подделка)
 class MicrosController:
     def __init__(self, program_settings: ProgramSettings, test: bool, lbl_img: QLabel):
+        vst = VideoStreamThread()
+        vst.start()
+
         if test:
             self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_3.jpg"
             # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
@@ -1044,7 +1059,6 @@ class MicrosController:
     def next_video_frame(self):
         self.video_check, self.video_img = self.video_stream.read()
         self.lbl_img.setPixmap(self.numpy_to_pixmap(self.video_img))
-        self.lbl_img.repaint()
 
     def __get_frame(self):
         return self.program_settings.snap_settings.frame
