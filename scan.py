@@ -9,12 +9,12 @@ import time
 import os
 import websockets
 
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QWidget, QMainWindow, QSizePolicy, QFileDialog, QMessageBox
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
 from PyQt5.QtWidgets import QAction, QInputDialog, QLineEdit, QLabel, QPushButton, QSpinBox, QFormLayout
 from PyQt5.QtWidgets import QAbstractSpinBox
-from PyQt5.QtCore import QEvent, Qt, QTimer, QThread
+from PyQt5.QtCore import QEvent, Qt, QTimer, QThread, pyqtSignal
 import numpy as np
 import cv2
 import datetime
@@ -36,15 +36,15 @@ class ScanWindow(QMainWindow):
     # Инициализация
     def __init__(self, main_window):
         super().__init__()
-        test = False
+        self.test = False
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
-        self.program_settings = ProgramSettings(test)
-        self.table_controller = TableController(self.loop, self.program_settings, test)
+        self.program_settings = ProgramSettings(self.test)
+        self.table_controller = TableController(self.loop, self.program_settings, self.test)
         # TEST Для удобства тестирования передаю в контроллер стола контроллер камеры
         self.lbl_img = QLabel()
-        self.micros_controller = MicrosController(self.program_settings, test, self.lbl_img)
+        # self.micros_controller = MicrosController(self.program_settings, self.test, self.lbl_img)
         # if self.table_controller.test:
         #     self.table_controller.micros_controller = self.micros_controller
         #     self.table_controller.program_settings = self.program_settings
@@ -71,6 +71,49 @@ class ScanWindow(QMainWindow):
 
         self.dir_for_img = "SavedImg"
         self.path_for_xml_file = os.path.join(self.dir_for_img, "settings.xml")
+
+        # Перенос параметров с MicrosController
+        if self.test:
+            self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_3.jpg"
+            # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
+            # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
+            self.test_img = cv2.imread(self.test_img_path)[:, :, :]
+        # self.frame = list()
+        self.video_img = None
+        self.video_check = False
+
+        if not self.test:
+            max_video_streams = 5
+            video_stream_index = -1
+            # vs = VideoStream(src=video_stream_index).start()
+            check_next_stream = True
+            while check_next_stream:
+                video_stream_index += 1
+                if video_stream_index > max_video_streams:
+                    time.sleep(1.0)
+                    video_stream_index = 0
+
+                # self.video_stream = VideoStream(src=video_stream_index).start()
+                # self.video_stream = VideoStream(src=video_stream_index, usePiCamera=True,
+                #                                 resolution=(1920, 1080)).start()
+                self.video_stream = cv2.VideoCapture(video_stream_index)
+                self.video_stream.set(3, 1920)
+                self.video_stream.set(4, 1080)
+
+                # noinspection PyBroadException
+                try:
+                    self.video_check, self.video_img = self.video_stream.read()
+                    if not self.video_check:
+                        continue
+                    # check_frame = img[:, :, :]
+                    check_next_stream = False
+                except Exception:
+                    # self.video_stream.stop()
+                    check_next_stream = True
+
+        self.vidik = VideoStreamThread(self.video_stream, self.video_img, self)
+        self.vidik.changePixmap.connect(self.lbl_img.setPixmap)
+        self.vidik.start()
 
         # self.table_controller.steps_in_mm = self.program_settings.table_settings.steps_in_mm
         # self.table_controller.limits_mm = self.program_settings.table_settings.limits_mm
@@ -99,7 +142,7 @@ class ScanWindow(QMainWindow):
         # Наличие несохраненного изображения
         self.unsaved = False
 
-        if test:
+        if self.test:
             print("Внимание! Программа работает в тестовом режиме!")
 
         # Доступные для взаимодействия компоненты формы
@@ -304,6 +347,36 @@ class ScanWindow(QMainWindow):
         return self.frame_height / self.pixels_in_mm[1]
     frame_height_mm = property(__get_frame_height_mm)
 
+    def __get_frame(self):
+        return self.program_settings.snap_settings.frame
+    frame = property(__get_frame)
+
+    def snap(self, x1: int, y1: int, x2: int, y2: int, crop=False):
+        if self.test:
+            time.sleep(0.3)
+            # return np.copy(self.test_img[y1:y2, x1:x2, :])
+            # Переворачиваем координаты съемки
+            y2_r = 6400 - y1
+            y1_r = 6400 - y2
+            return np.copy(self.test_img[y1_r:y2_r, x1:x2, :])
+        else:
+            # self.video_timer.stop()
+            time.sleep(0.1)
+            # for i in range(10):
+            #     self.video_stream.read()
+            # Прогревочные съемки
+            for i in range(10):
+                self.video_stream.read()
+            check, img = self.video_stream.read()
+            self.video_timer.start()
+            if crop:
+                # return np.copy(img[self.frame[3]-1:self.frame[1]:-1, self.frame[2]-1:self.frame[0]:-1, :])
+                # return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :][::-1, ::-1, :])
+                return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :])
+            else:
+                # return np.copy(img[::-1, ::-1, :])
+                return np.copy(img)
+
     # Тестовая обертка функции движения, чтобы обходиться без подключенного станка
     def coord_move(self, coord, mode="discrete", crop=False):
         self.table_controller.coord_move(coord, mode)
@@ -317,13 +390,11 @@ class ScanWindow(QMainWindow):
             #                                    int(self.pixels_in_mm * (self.table_controller.coord_mm[1]
             #                                                             + self.snap_height_mm_half)),
             #                                    crop=crop)
-            snap = self.micros_controller.snap(int(self.pixels_in_mm[0] * (self.table_controller.coord_mm[0])),
-                                               int(self.pixels_in_mm[1] * (self.table_controller.coord_mm[1])),
-                                               int(self.pixels_in_mm[0] * (self.table_controller.coord_mm[0]
-                                                                           + self.snap_width_mm)),
-                                               int(self.pixels_in_mm[1] * (self.table_controller.coord_mm[1]
-                                                                           + self.snap_height_mm)),
-                                               crop=crop)
+            snap = self.snap(int(self.pixels_in_mm[0] * (self.table_controller.coord_mm[0])),
+                             int(self.pixels_in_mm[1] * (self.table_controller.coord_mm[1])),
+                             int(self.pixels_in_mm[0] * (self.table_controller.coord_mm[0] + self.snap_width_mm)),
+                             int(self.pixels_in_mm[1] * (self.table_controller.coord_mm[1] + self.snap_height_mm)),
+                             crop=crop)
             # self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(snap))
             # self.lbl_img.repaint()
             self.setWindowTitle(str(self.table_controller))
@@ -465,7 +536,7 @@ class ScanWindow(QMainWindow):
             # Перевод камеры к позиции, где должна располагаться микросхема
             x = int(self.table_controller.limits_mm[0] / 2)
             y = int(self.table_controller.limits_mm[1] / 3)
-            if self.micros_controller.test:
+            if self.test:
                 y = int(self.table_controller.limits_mm[1] / 2)
             snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
 
@@ -993,76 +1064,22 @@ class KeyboardButton:
 
 
 class VideoStreamThread(QThread):
-    def __init__(self):
-        QThread.__init__(self)
+    changePixmap = pyqtSignal(QPixmap)
+
+    def __init__(self, video_stream, video_img, parent=None):
+        self.video_stream = video_stream
+        self.video_img = video_img
+        QThread.__init__(self, parent=parent)
 
     def run(self):
-        def work():
-            print("snap")
-        timer = QTimer()
-        timer.timeout.connect(work)
-        timer.start(2000)
-        self.exec_()
-
-# Класс управления микроскопом (пока тестовая подделка)
-class MicrosController:
-    def __init__(self, program_settings: ProgramSettings, test: bool, lbl_img: QLabel):
-        vst = VideoStreamThread()
-        vst.start()
-
-        if test:
-            self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_3.jpg"
-            # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
-            # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
-            self.test_img = cv2.imread(self.test_img_path)[:, :, :]
-        self.test = test
-        # self.frame = list()
-        self.program_settings: ProgramSettings = program_settings
-        self.video_img = None
-        self.video_check = False
-        self.lbl_img = lbl_img
-
-        if not self.test:
-            max_video_streams = 6
-            video_stream_index = -1
-            # vs = VideoStream(src=video_stream_index).start()
-            check_next_stream = True
-            while check_next_stream:
-                video_stream_index += 1
-                if video_stream_index > max_video_streams:
-                    time.sleep(1.0)
-                    video_stream_index = 0
-
-                # self.video_stream = VideoStream(src=video_stream_index).start()
-                # self.video_stream = VideoStream(src=video_stream_index, usePiCamera=True,
-                #                                 resolution=(1920, 1080)).start()
-                self.video_stream = cv2.VideoCapture(video_stream_index)
-                self.video_stream.set(3, 1920)
-                self.video_stream.set(4, 1080)
-
-                # noinspection PyBroadException
-                try:
-                    self.video_check, self.video_img = self.video_stream.read()
-                    if not self.video_check:
-                        continue
-                    # check_frame = img[:, :, :]
-                    check_next_stream = False
-                except Exception:
-                    # self.video_stream.stop()
-                    check_next_stream = True
-
-            self.video_fps = 60
-            self.video_timer = QTimer()
-            self.video_timer.timeout.connect(self.next_video_frame)
-            self.video_timer.start(1000. / self.video_fps)
-
-    def next_video_frame(self):
-        self.video_check, self.video_img = self.video_stream.read()
-        self.lbl_img.setPixmap(self.numpy_to_pixmap(self.video_img))
-
-    def __get_frame(self):
-        return self.program_settings.snap_settings.frame
-    frame = property(__get_frame)
+        while True:
+            ret, self.video_img = self.video_stream.read()
+            # rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
+            # convertToQtFormat = QPixmap.fromImage(convertToQtFormat)
+            # p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
+            if ret:
+                self.changePixmap.emit(self.numpy_to_pixmap(self.video_img))
 
     @staticmethod
     def numpy_to_q_image(image):
@@ -1096,34 +1113,130 @@ class MicrosController:
 
     def numpy_to_pixmap(self, img):
         q_img = self.numpy_to_q_image(img)
-        pixmap = QtGui.QPixmap.fromImage(q_img)
+        pixmap = QPixmap.fromImage(q_img)
         return pixmap
 
-    def snap(self, x1: int, y1: int, x2: int, y2: int, crop=False):
-        if self.test:
-            time.sleep(0.3)
-            # return np.copy(self.test_img[y1:y2, x1:x2, :])
-            # Переворачиваем координаты съемки
-            y2_r = 6400 - y1
-            y1_r = 6400 - y2
-            return np.copy(self.test_img[y1_r:y2_r, x1:x2, :])
-        else:
-            self.video_timer.stop()
-            time.sleep(0.1)
-            # for i in range(10):
-            #     self.video_stream.read()
-            # Прогревочные съемки
-            for i in range(10):
-                self.video_stream.read()
-            check, img = self.video_stream.read()
-            self.video_timer.start()
-            if crop:
-                # return np.copy(img[self.frame[3]-1:self.frame[1]:-1, self.frame[2]-1:self.frame[0]:-1, :])
-                # return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :][::-1, ::-1, :])
-                return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :])
-            else:
-                # return np.copy(img[::-1, ::-1, :])
-                return np.copy(img)
+
+# Класс управления микроскопом (пока тестовая подделка)
+# class MicrosController:
+#     def __init__(self, program_settings: ProgramSettings, test: bool, lbl_img: QLabel):
+#         # vst = VideoStreamThread(self)
+#         # vst.start()
+#
+#         if test:
+#             self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_3.jpg"
+#             # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
+#             # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
+#             self.test_img = cv2.imread(self.test_img_path)[:, :, :]
+#         self.test = test
+#         # self.frame = list()
+#         self.program_settings: ProgramSettings = program_settings
+#         self.video_img = None
+#         self.video_check = False
+#         self.lbl_img = lbl_img
+#
+#         if not self.test:
+#             max_video_streams = 6
+#             video_stream_index = -1
+#             # vs = VideoStream(src=video_stream_index).start()
+#             check_next_stream = True
+#             while check_next_stream:
+#                 video_stream_index += 1
+#                 if video_stream_index > max_video_streams:
+#                     time.sleep(1.0)
+#                     video_stream_index = 0
+#
+#                 # self.video_stream = VideoStream(src=video_stream_index).start()
+#                 # self.video_stream = VideoStream(src=video_stream_index, usePiCamera=True,
+#                 #                                 resolution=(1920, 1080)).start()
+#                 self.video_stream = cv2.VideoCapture(video_stream_index)
+#                 self.video_stream.set(3, 1920)
+#                 self.video_stream.set(4, 1080)
+#
+#                 # noinspection PyBroadException
+#                 try:
+#                     self.video_check, self.video_img = self.video_stream.read()
+#                     if not self.video_check:
+#                         continue
+#                     # check_frame = img[:, :, :]
+#                     check_next_stream = False
+#                 except Exception:
+#                     # self.video_stream.stop()
+#                     check_next_stream = True
+
+    #         self.video_fps = 60
+    #         self.video_timer = QTimer()
+    #         self.video_timer.timeout.connect(self.next_video_frame)
+    #         self.video_timer.start(1000. / self.video_fps)
+    #
+    # def next_video_frame(self):
+    #     self.video_check, self.video_img = self.video_stream.read()
+    #     self.lbl_img.setPixmap(self.numpy_to_pixmap(self.video_img))
+
+    # def __get_frame(self):
+    #     return self.program_settings.snap_settings.frame
+    # frame = property(__get_frame)
+
+    # @staticmethod
+    # def numpy_to_q_image(image):
+    #     q_img = QImage()
+    #     if image.dtype == np.uint8:
+    #         if len(image.shape) == 2:
+    #             channels = 1
+    #             height, width = image.shape
+    #             bytes_per_line = channels * width
+    #             q_img = QImage(
+    #                 image.data, width, height, bytes_per_line, QImage.Format_Indexed8
+    #             )
+    #             q_img.setColorTable([QtGui.qRgb(i, i, i) for i in range(256)])
+    #         elif len(image.shape) == 3:
+    #             if image.shape[2] == 3:
+    #                 height, width, channels = image.shape
+    #                 bytes_per_line = channels * width
+    #                 q_img = QImage(
+    #                     # image.data, width, height, bytes_per_line, QImage.Format_RGB888
+    #                     image.data, width, height, bytes_per_line, QImage.Format_BGR888
+    #                 )
+    #             elif image.shape[2] == 4:
+    #                 height, width, channels = image.shape
+    #                 bytes_per_line = channels * width
+    #                 # fmt = QImage.Format_ARGB32
+    #                 q_img = QImage(
+    #                     # image.data, width, height, bytes_per_line, QImage.Format_ARGB32
+    #                     image.data, width, height, bytes_per_line, QImage.Format_BGR888
+    #                 )
+    #     return q_img
+    #
+    # def numpy_to_pixmap(self, img):
+    #     q_img = self.numpy_to_q_image(img)
+    #     pixmap = QPixmap.fromImage(q_img)
+    #     return pixmap
+
+    # def snap(self, x1: int, y1: int, x2: int, y2: int, crop=False):
+    #     if self.test:
+    #         time.sleep(0.3)
+    #         # return np.copy(self.test_img[y1:y2, x1:x2, :])
+    #         # Переворачиваем координаты съемки
+    #         y2_r = 6400 - y1
+    #         y1_r = 6400 - y2
+    #         return np.copy(self.test_img[y1_r:y2_r, x1:x2, :])
+    #     else:
+    #         self.video_timer.stop()
+    #         time.sleep(0.1)
+    #         # for i in range(10):
+    #         #     self.video_stream.read()
+    #         # Прогревочные съемки
+    #         for i in range(10):
+    #             self.video_stream.read()
+    #         check, img = self.video_stream.read()
+    #         self.video_timer.start()
+    #         if crop:
+    #             # return np.copy(img[self.frame[3]-1:self.frame[1]:-1, self.frame[2]-1:self.frame[0]:-1, :])
+    #             # return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :][::-1, ::-1, :])
+    #             return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :])
+    #         else:
+    #             # return np.copy(img[::-1, ::-1, :])
+    #             return np.copy(img)
 
 
 # Класс, который общается с контроллером станка
