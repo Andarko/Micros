@@ -74,9 +74,9 @@ class ScanWindow(QMainWindow):
 
         # Перенос параметров с MicrosController
         if self.test:
-            self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_3.jpg"
-            # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_2.jpg"
-            # self.test_img_path = "/home/andrey/Projects/MicrosController/TEST/MotherBoard_5.jpg"
+            self.test_img_path = "/TEST/MotherBoard_3.jpg"
+            # self.test_img_path = "/TEST/MotherBoard_2.jpg"
+            # self.test_img_path = "/TEST/MotherBoard_5.jpg"
             self.test_img = cv2.imread(self.test_img_path)[:, :, :]
         # self.frame = list()
         self.video_img = None
