@@ -2,4 +2,4 @@
 .~lock.*.odt*
 venv
 TEMP
-*.jpg
+SavedImg/*.jpg
