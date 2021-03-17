@@ -195,7 +195,6 @@ class ProgramSettings(object):
                                 for element_mode in element_micros.getchildren():
                                     if element_mode.tag == "Default" and element_mode.text == "True":
                                         new_snap_settings.default = True
-                                        self.snap_settings = new_snap_settings
                                     elif element_mode.tag == "Offset":
                                         for element_offset in element_mode.getchildren():
                                             if element_offset.tag == "Left":
@@ -224,6 +223,22 @@ class ProgramSettings(object):
                                 new_snap_settings.frame[3] = new_snap_settings.snap_height - new_snap_settings.offset[3]
         if self.all_micros_settings and not self.micros_settings:
             self.micros_settings = self.all_micros_settings[0]
+            if not self.test:
+                self.micros_settings.default = True
+
+        for micros_settings in self.all_micros_settings:
+            if len(micros_settings.all_snap_settings) > 0:
+                default = False
+                for snap_settings in micros_settings.all_snap_settings:
+                    if snap_settings.default:
+                        default = True
+                        break
+                if not default:
+                    micros_settings.all_snap_settings[0].default = True
+
+        for snap_settings in self.micros_settings.all_snap_settings:
+            if snap_settings.default:
+                self.snap_settings = snap_settings
         if self.micros_settings.all_snap_settings and not self.snap_settings:
             self.snap_settings = self.micros_settings.all_snap_settings[0]
 
@@ -457,16 +472,20 @@ class SettingsDialog(QDialog):
 
         self.edt_res_width.setValue(micros_settings.resolution.width())
         self.edt_res_height.setValue(micros_settings.resolution.height())
-        self.combo_modes.clear()
         self.combo_modes.currentIndexChanged.disconnect(self.combo_modes_changed)
+        self.combo_modes.clear()
         for mode in micros_settings.all_snap_settings:
             self.combo_modes.addItem(mode.name)
-        i = -1
-        for mode in micros_settings.all_snap_settings:
-            i += 1
-            if mode.default:
-                self.combo_modes.setCurrentIndex(i)
-                self.load_mode_settings_to_ui(self.program_settings.snap_settings)
+        if micros_settings.all_snap_settings:
+            # for mode in micros_settings.all_snap_settings.reverse():
+            for i in range(len(micros_settings.all_snap_settings) - 1, -1, -1):
+                mode = micros_settings.all_snap_settings[i]
+                if mode.default:
+                    break
+            self.combo_modes.setCurrentIndex(i)
+            self.load_mode_settings_to_ui(micros_settings.all_snap_settings[i])
+        else:
+            self.load_mode_settings_to_ui(None)
         self.edits_res_unsaved = False
         self.combo_modes.currentIndexChanged.connect(self.combo_modes_changed)
         # self.combo_changes = False

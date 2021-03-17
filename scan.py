@@ -36,7 +36,7 @@ class ScanWindow(QMainWindow):
     # Инициализация
     def __init__(self, main_window):
         super().__init__()
-        self.test = False
+        self.test = True
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
@@ -50,7 +50,8 @@ class ScanWindow(QMainWindow):
         #     self.table_controller.program_settings = self.program_settings
 
         if not self.table_controller.thread_server or not self.table_controller.thread_server.is_alive():
-            self.table_controller.thread_server.start()
+            if not self.test:
+                self.table_controller.thread_server.start()
         time.sleep(2.0)
         # self.micros_controller.coord_check()
         self.continuous_mode = False
@@ -64,7 +65,8 @@ class ScanWindow(QMainWindow):
                                  Qt.Key_Plus: KeyboardButton(), Qt.Key_Minus: KeyboardButton()}
         # Пока отключу лишний процесс ручного управления temp
         self.thread_continuous = Thread(target=self.continuous_move)
-        self.thread_continuous.start()
+        if not self.test:
+            self.thread_continuous.start()
 
         # self.thread_video = Thread(target=self.video_thread)
         # self.thread_video.start()
@@ -74,9 +76,9 @@ class ScanWindow(QMainWindow):
 
         # Перенос параметров с MicrosController
         if self.test:
-            self.test_img_path = "/TEST/MotherBoard_3.jpg"
-            # self.test_img_path = "/TEST/MotherBoard_2.jpg"
-            # self.test_img_path = "/TEST/MotherBoard_5.jpg"
+            self.test_img_path = os.path.join("TEST", "MotherBoard_3.jpg")
+            # self.test_img_path = os.path.join("TEST", "MotherBoard_2.jpg")
+            # self.test_img_path = os.path.join("TEST", "MotherBoard_5.jpg")
             self.test_img = cv2.imread(self.test_img_path)[:, :, :]
         # self.frame = list()
         self.video_img = None
@@ -110,10 +112,13 @@ class ScanWindow(QMainWindow):
                 except Exception:
                     # self.video_stream.stop()
                     check_next_stream = True
+        else:
+            self.video_stream = None
 
         self.vidik = VideoStreamThread(self.video_stream, self.video_img, self)
-        self.vidik.changePixmap.connect(self.lbl_img.setPixmap)
-        self.vidik.start()
+        if not self.test:
+            self.vidik.changePixmap.connect(self.lbl_img.setPixmap)
+            self.vidik.start()
 
         # self.table_controller.steps_in_mm = self.program_settings.table_settings.steps_in_mm
         # self.table_controller.limits_mm = self.program_settings.table_settings.limits_mm
@@ -395,8 +400,9 @@ class ScanWindow(QMainWindow):
                              int(self.pixels_in_mm[0] * (self.table_controller.coord_mm[0] + self.snap_width_mm)),
                              int(self.pixels_in_mm[1] * (self.table_controller.coord_mm[1] + self.snap_height_mm)),
                              crop=crop)
-            # self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(snap))
-            # self.lbl_img.repaint()
+            if self.test:
+                self.lbl_img.setPixmap(self.vidik.numpy_to_pixmap(snap))
+                self.lbl_img.repaint()
             self.setWindowTitle(str(self.table_controller))
             return snap
         return None
@@ -436,7 +442,7 @@ class ScanWindow(QMainWindow):
         self.control_elements_enabled(False)
         self.table_controller.coord_init()
         self.setWindowTitle(str(self.table_controller))
-        self.coord_move(self.table_controller.coord_step, mode="discrete", crop=True)
+        self.coord_move(self.table_controller.coord_mm, mode="discrete", crop=True)
         self.control_elements_enabled(True)
 
     def device_check(self):
@@ -648,10 +654,10 @@ class ScanWindow(QMainWindow):
                 # previous_direction = direction
                 direction = direction.next()
 
-            self.edt_border_x1.setValue(str(min(all_x)))
-            self.edt_border_y1.setValue(str(min(all_y)))
-            self.edt_border_x2.setValue(str(max(all_x)))
-            self.edt_border_y2.setValue(str(max(all_y)))
+            self.edt_border_x1.setValue(min(all_x))
+            self.edt_border_y1.setValue(min(all_y))
+            self.edt_border_x2.setValue(max(all_x))
+            self.edt_border_y2.setValue(max(all_y))
         except Exception as e:
             raise
             QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + str(e),
@@ -1111,8 +1117,9 @@ class VideoStreamThread(QThread):
                     )
         return q_img
 
-    def numpy_to_pixmap(self, img):
-        q_img = self.numpy_to_q_image(img)
+    @staticmethod
+    def numpy_to_pixmap(img):
+        q_img = VideoStreamThread.numpy_to_q_image(img)
         pixmap = QPixmap.fromImage(q_img)
         return pixmap
 
