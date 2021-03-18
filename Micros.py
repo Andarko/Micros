@@ -601,7 +601,7 @@ class ImageStatus(Enum):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.scan_window = scan.ScanWindow(self)
+        self.scan_window: scan.ScanWindow = None
         # self.scan_window.setAttribute(Qt.WA_DeleteOnClose)
         self.savedData = SavedData("")
 
@@ -937,12 +937,20 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self.file_name and self.modified:
-            dlgResult = QMessageBox.question(self, "Confirm Dialog", "Есть несохраненные изменения. Хотите их сохранить перед закрытием?", QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
-            if dlgResult == QMessageBox.Yes:
+            dlg_result = QMessageBox.question(self,
+                                              "Confirm Dialog",
+                                              "Есть несохраненные изменения. Хотите их сохранить перед закрытием?",
+                                              QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                                              QMessageBox.Yes)
+            if dlg_result == QMessageBox.Yes:
                 self.save_file()
-            elif dlgResult == QMessageBox.Cancel:
+            elif dlg_result == QMessageBox.Cancel:
                 event.ignore()
                 return
+        if self.scan_window and not self.scan_window.test:
+            # self.scan_window.thread_continuous.join()
+            self.scan_window.vidik.terminate()
+            self.scan_window.table_controller.thread_server.join()
         if os.path.exists(self.EXTRACT_TEMP_SUB_FOLDER):
             shutil.rmtree(self.EXTRACT_TEMP_SUB_FOLDER)
 
@@ -962,6 +970,8 @@ class MainWindow(QMainWindow):
 
     def new_scan(self):
         if self.prepare_to_close_file():
+            if not self.scan_window:
+                self.scan_window = scan.ScanWindow(self)
             self.scan_window.show()
             self.hide()
 

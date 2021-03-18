@@ -64,9 +64,17 @@ class ScanWindow(QMainWindow):
                                  Qt.Key_S: KeyboardButton(), Qt.Key_A: KeyboardButton(),
                                  Qt.Key_Plus: KeyboardButton(), Qt.Key_Minus: KeyboardButton()}
         # Пока отключу лишний процесс ручного управления temp
-        self.thread_continuous = Thread(target=self.continuous_move)
-        if not self.test:
-            self.thread_continuous.start()
+        # self.thread_continuous = Thread(target=self.continuous_move)
+
+        # self.thread_continuous = QThread()
+        # self.thread_continuous.started.connect(self.continuous_move)
+
+        self.timer_continuous = QTimer()
+        self.timer_continuous.setInterval(10)
+        self.timer_continuous.timeout.connect(self.continuous_move)
+
+        # if not self.test:
+        #     self.thread_continuous.start()
 
         # self.thread_video = Thread(target=self.video_thread)
         # self.thread_video.start()
@@ -373,7 +381,7 @@ class ScanWindow(QMainWindow):
             for i in range(10):
                 self.video_stream.read()
             check, img = self.video_stream.read()
-            self.video_timer.start()
+            # self.video_timer.start()
             if crop:
                 # return np.copy(img[self.frame[3]-1:self.frame[1]:-1, self.frame[2]-1:self.frame[0]:-1, :])
                 # return np.copy(img[self.frame[1]:self.frame[3], self.frame[0]:self.frame[2], :][::-1, ::-1, :])
@@ -476,8 +484,21 @@ class ScanWindow(QMainWindow):
         self.control_elements_enabled(True)
 
     def device_manual(self, status):
-        self.continuous_mode = status
-        self.control_elements_enabled(not status)
+        if status:
+            self.continuous_mode = True
+            # self.thread_continuous.start()
+            self.timer_continuous.start()
+            print("thread started")
+        else:
+            # self.continuous_mode = False
+            # self.thread_continuous.terminate()
+            self.timer_continuous.stop()
+            print("thread joined")
+
+        # self.continuous_mode = status
+
+        # self.control_elements_enabled(not status)
+        print("device manual finished")
 
     def control_elements_enabled(self, status):
         self.btn_init.setEnabled(status)
@@ -964,34 +985,39 @@ class ScanWindow(QMainWindow):
     #     print(event.key())
 
     def continuous_move(self):
-        while not self.closed:
-            if self.continuous_mode:
-                # someone_clicked = False
-                steps_count = 24
-                if self.key_shift_pressed:
-                    steps_count = 8
-                if self.keyboard_buttons[Qt.Key_W].check_click():
-                    self.coord_move([0, steps_count, 0], mode="continuous")
-                    # someone_clicked = True
-                if self.keyboard_buttons[Qt.Key_D].check_click():
-                    self.coord_move([steps_count, 0, 0], mode="continuous")
-                    # someone_clicked = True
-                if self.keyboard_buttons[Qt.Key_S].check_click():
-                    self.coord_move([0, -steps_count, 0], mode="continuous")
-                    # someone_clicked = True
-                if self.keyboard_buttons[Qt.Key_A].check_click():
-                    self.coord_move([-steps_count, 0, 0], mode="continuous")
-                    # someone_clicked = True
-                if self.keyboard_buttons[Qt.Key_Plus].check_click():
-                    self.coord_move([0, 0, steps_count], mode="continuous")
-                    # someone_clicked = True
-                if self.keyboard_buttons[Qt.Key_Minus].check_click():
-                    self.coord_move([0, 0, -steps_count], mode="continuous")
-                    # someone_clicked = True
-                # if someone_clicked:
-                time.sleep(0.001)
-            else:
-                time.sleep(1)
+        # print("continuous start")
+        # while True:
+        # if self.continuous_mode:
+        # someone_clicked = False
+        steps_count = 24
+        if self.key_shift_pressed:
+            steps_count = 8
+        if self.keyboard_buttons[Qt.Key_W].check_click():
+            self.coord_move([0, steps_count, 0], mode="continuous")
+            # someone_clicked = True
+        if self.keyboard_buttons[Qt.Key_D].check_click():
+            self.coord_move([steps_count, 0, 0], mode="continuous")
+            # someone_clicked = True
+        if self.keyboard_buttons[Qt.Key_S].check_click():
+            self.coord_move([0, -steps_count, 0], mode="continuous")
+            # someone_clicked = True
+        if self.keyboard_buttons[Qt.Key_A].check_click():
+            self.coord_move([-steps_count, 0, 0], mode="continuous")
+            # someone_clicked = True
+        if self.keyboard_buttons[Qt.Key_Plus].check_click():
+            self.coord_move([0, 0, steps_count], mode="continuous")
+            # someone_clicked = True
+        if self.keyboard_buttons[Qt.Key_Minus].check_click():
+            self.coord_move([0, 0, -steps_count], mode="continuous")
+
+            # someone_clicked = True
+        # if someone_clicked:
+        time.sleep(0.01)
+        # i += 1
+        # print("continuous " + str(i))
+        # else:
+        #     time.sleep(1)
+        # print("continuous finish")
 
     # def video_thread(self):
     #     while True:
