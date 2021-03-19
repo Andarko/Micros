@@ -22,7 +22,7 @@ import zipfile
 
 from PyQt5 import QtGui
 from vassal import Terminal
-from threading import Thread, Timer
+from threading import Thread
 import json
 import xml.etree.ElementTree as Xml
 
@@ -36,7 +36,7 @@ class ScanWindow(QMainWindow):
     # Инициализация
     def __init__(self, main_window):
         super().__init__()
-        self.test = True
+        self.test = False
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
@@ -49,9 +49,9 @@ class ScanWindow(QMainWindow):
         #     self.table_controller.micros_controller = self.micros_controller
         #     self.table_controller.program_settings = self.program_settings
 
-        if not self.table_controller.thread_server or not self.table_controller.thread_server.is_alive():
-            if not self.test:
-                self.table_controller.thread_server.start()
+        # if not self.table_controller.thread_server or not self.table_controller.thread_server.is_alive():
+        if not self.test:
+            self.table_controller.thread_server.start()
         time.sleep(2.0)
         # self.micros_controller.coord_check()
         self.continuous_mode = False
@@ -70,7 +70,7 @@ class ScanWindow(QMainWindow):
         # self.thread_continuous.started.connect(self.continuous_move)
 
         self.timer_continuous = QTimer()
-        self.timer_continuous.setInterval(10)
+        self.timer_continuous.setInterval(1)
         self.timer_continuous.timeout.connect(self.continuous_move)
 
         # if not self.test:
@@ -488,17 +488,17 @@ class ScanWindow(QMainWindow):
             self.continuous_mode = True
             # self.thread_continuous.start()
             self.timer_continuous.start()
-            print("thread started")
+            # print("thread started")
         else:
             # self.continuous_mode = False
             # self.thread_continuous.terminate()
             self.timer_continuous.stop()
-            print("thread joined")
+            # print("thread joined")
 
         # self.continuous_mode = status
 
         # self.control_elements_enabled(not status)
-        print("device manual finished")
+        # print("device manual finished")
 
     def control_elements_enabled(self, status):
         self.btn_init.setEnabled(status)
@@ -1095,16 +1095,30 @@ class KeyboardButton:
         return self.clicked
 
 
+class TableServerThread(QThread):
+    def __init__(self, hostname, parent=None):
+        self.hostname = hostname
+        QThread.__init__(self, parent=parent)
+
+    def run(self) -> None:
+        shell = Terminal(["ssh pi@" + self.hostname, "python3 server.py", ])
+        shell.run()
+        # while True:
+        #     print("server run")
+        #     time.sleep(2)
+
+
 class VideoStreamThread(QThread):
     changePixmap = pyqtSignal(QPixmap)
 
     def __init__(self, video_stream, video_img, parent=None):
         self.video_stream = video_stream
         self.video_img = video_img
+        self.work = True
         QThread.__init__(self, parent=parent)
 
     def run(self):
-        while True:
+        while self.work:
             ret, self.video_img = self.video_stream.read()
             # rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             # convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
@@ -1292,7 +1306,10 @@ class TableController:
         self.manual_left_count = 0
         self.manual_right_count = 0
         self.loop = loop
-        self.thread_server = Thread(target=self.server_start)
+        # self.thread_server = Thread(target=self.server_start)
+        self.thread_server = TableServerThread(self.hostname)
+        # self.thread_server = QThread()
+        # self.thread_server.started.connect(self.server_start)
         # self.steps_in_mm = 80
         # self.limits_step = []
         # self.limits_mm = []

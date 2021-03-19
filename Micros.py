@@ -462,6 +462,7 @@ class ImageView(object):
         if new_scale > 20.0:
             new_scale = 20.0
 
+        # Если видимая область сшитого изображения выходит за его пределы - возвращаем видимую область в пределы
         if self.offset.y + new_visible_size.height() / new_scale > self.saved_data.arrayImagesSize[0][-1][0].y:
             self.offset.y = self.saved_data.arrayImagesSize[0][-1][0].y - new_visible_size.height() / new_scale
         if self.offset.y < 0:
@@ -470,7 +471,7 @@ class ImageView(object):
             self.offset.x = self.saved_data.arrayImagesSize[0][0][-1].x - new_visible_size.width() / new_scale
         if self.offset.x < 0:
             self.offset.x = 0
-        # Проверим сначала, как зименился масштаб, не надо ли загрузить изображения другого качества
+        # Проверим сначала, как изменился масштаб, не надо ли загрузить изображения другого качества
         new_scale_index = 0
         if new_scale <= 0.125:
             new_scale_index = 2
@@ -949,8 +950,14 @@ class MainWindow(QMainWindow):
                 return
         if self.scan_window and not self.scan_window.test:
             # self.scan_window.thread_continuous.join()
-            self.scan_window.vidik.terminate()
-            self.scan_window.table_controller.thread_server.join()
+            if self.scan_window.vidik.isRunning():
+                self.scan_window.vidik.work = False
+                # self.scan_window.vidik.terminate()
+                print("vidik.terminate()")
+            # self.scan_window.table_controller.thread_server.join()
+            if self.scan_window.table_controller.thread_server.isRunning():
+                print("table_controller.thread_server.terminate()")
+                self.scan_window.table_controller.thread_server.terminate()
         if os.path.exists(self.EXTRACT_TEMP_SUB_FOLDER):
             shutil.rmtree(self.EXTRACT_TEMP_SUB_FOLDER)
 
