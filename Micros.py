@@ -347,8 +347,10 @@ class ImageView(object):
         if self.sumImg.shape[0] > 0 and new_rect.width > 0 and new_rect.height > 0:
             intersect_rect.x = max(self.curRect.x, new_rect.x)
             intersect_rect.y = max(self.curRect.y, new_rect.y)
-            intersect_rect.width = min(self.curRect.x + self.curRect.width, new_rect.x + new_rect.width) - intersect_rect.x
-            intersect_rect.height = min(self.curRect.y + self.curRect.height, new_rect.y + new_rect.height) - intersect_rect.y
+            intersect_rect.width = min(self.curRect.x + self.curRect.width, new_rect.x
+                                       + new_rect.width) - intersect_rect.x
+            intersect_rect.height = min(self.curRect.y + self.curRect.height, new_rect.y
+                                        + new_rect.height) - intersect_rect.y
 
         if intersect_rect.width <= 0 or intersect_rect.height <= 0:
             # Отрисовываем соединенную картинку простым способом
@@ -484,6 +486,7 @@ class ImageView(object):
         x2_ind = 0
         y2_offset = self.offset.y + new_visible_size.height() / new_scale
         x2_offset = self.offset.x + new_visible_size.width() / new_scale
+        # Получение первых и последних индексов изображений, из которых нужно сшивать итоговое изображение
         for i in range(self.saved_data.rowCount - 1, -1, -1):
             if y2_offset >= self.saved_data.arrayImagesSize[0][i][0].y:
                 y2_ind = i
@@ -612,6 +615,7 @@ class MainWindow(QMainWindow):
 
         self.scale_edit = QDoubleSpinBox()
         self.im_label = QLabel()
+        self.minimap_label = QLabel()
         self.right_doc_widget = QDockWidget("Инструменты", self)
 
         self.init_ui()
@@ -761,7 +765,6 @@ class MainWindow(QMainWindow):
         minimap_layout = QGridLayout()
         self.im_label.setLayout(minimap_layout)
 
-        self.minimap_label = QLabel()
         # imgMini = cv2.imread(
         # "/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/mini.jpg",
         # cv2.IMREAD_COLOR)[:, :, ::-1]
@@ -1071,6 +1074,7 @@ class MainWindow(QMainWindow):
                 self.modified = False
                 self.savedData.set_all_image_in_memory(sum_size <= self.programSettings.fullLoadImageMemoryLimit)
                 self.services_menu_all_in_memory.setChecked(sum_size <= self.programSettings.fullLoadImageMemoryLimit)
+                self.imageView.sumImg = np.empty(0)
                 self.resized()
                 self.setWindowTitle("Micros - " + self.file_name)
             else:
