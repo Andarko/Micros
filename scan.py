@@ -305,7 +305,8 @@ class ScanWindow(QMainWindow):
         self.move(300, 300)
         self.setMinimumSize(800, 600)
         # self.show()
-        print(self.pixels_in_mm)
+        # print(self.pixels_in_mm)
+
 
     def __get_pixels_in_mm(self):
         return self.program_settings.snap_settings.pixels_in_mm
@@ -384,6 +385,8 @@ class ScanWindow(QMainWindow):
             for i in range(10):
                 self.video_stream.read()
             check, img = self.video_stream.read()
+            self.lbl_img.setPixmap(self.vidik.numpy_to_pixmap(img))
+            self.lbl_img.repaint()
             # img = self.vidik.video_img
             # self.video_timer.start()
             if crop:
@@ -419,6 +422,8 @@ class ScanWindow(QMainWindow):
                 self.lbl_img.repaint()
             self.setWindowTitle(str(self.table_controller))
             return snap
+        # self.lbl_img.setPixmap(self.vidik.numpy_to_pixmap(snap))
+        # self.lbl_img.repaint()
         self.vidik.work = True
         return None
 
@@ -459,11 +464,13 @@ class ScanWindow(QMainWindow):
     #     print("init start")
 
     def device_init(self):
+        self.vidik.work = False
         self.control_elements_enabled(False)
         self.table_controller.coord_init()
         self.setWindowTitle(str(self.table_controller))
         self.coord_move(self.table_controller.coord_mm, mode="discrete", crop=True)
         self.control_elements_enabled(True)
+        self.vidik.work = True
 
     def device_check(self):
         self.table_controller.coord_check()
@@ -475,6 +482,7 @@ class ScanWindow(QMainWindow):
     #     print("move start")
 
     def device_move(self):
+        self.vidik.work = False
         self.control_elements_enabled(False)
         input_dialog = QInputDialog()
         text, ok = input_dialog.getText(self,
@@ -491,14 +499,17 @@ class ScanWindow(QMainWindow):
             self.setWindowTitle(str(self.table_controller))
 
         self.control_elements_enabled(True)
+        self.vidik.work = True
 
     def device_move_mid(self):
+        self.vidik.work = False
         self.control_elements_enabled(False)
         x = int(self.table_controller.limits_mm[0] / 2)
         y = int(self.table_controller.limits_mm[1] / 2)
         self.coord_move([x, y, self.table_controller.coord_mm[2]])
         self.setWindowTitle(str(self.table_controller))
         self.control_elements_enabled(True)
+        self.vidik.work = True
 
     def device_manual(self, status):
         if status:
@@ -573,6 +584,7 @@ class ScanWindow(QMainWindow):
 
     # Функция идет по границе изделия и записывает пределы для съемки
     def border_find(self):
+        self.vidik.work = False
         self.control_elements_enabled(False)
         try:
             if self.table_controller.server_status == 'uninitialized':
@@ -704,6 +716,7 @@ class ScanWindow(QMainWindow):
         finally:
             self.control_elements_enabled(True)
             QMessageBox.information(self, "Info Dialog", "Границы определены", QMessageBox.Ok, QMessageBox.Ok)
+            self.vidik.work = True
 
     def exp_border_find(self):
         pass
@@ -803,6 +816,7 @@ class ScanWindow(QMainWindow):
     #     return 0
 
     def scan(self):
+        self.vidik.work = False
         if self.unsaved:
             dlg_result = QMessageBox.question(self,
                                               "Confirm Dialog",
@@ -945,6 +959,7 @@ class ScanWindow(QMainWindow):
         self.btn_save_scan.setEnabled(True)
         QMessageBox.information(self, "Info Dialog", "Сканирование завершено", QMessageBox.Ok, QMessageBox.Ok)
         self.unsaved = True
+        self.vidik.work = True
 
     # Сохранение изображений в архивный файл
     def save_scan(self):
@@ -971,6 +986,7 @@ class ScanWindow(QMainWindow):
         else:
             return False
 
+        self.vidik.work = False
         z = zipfile.ZipFile(file_name, 'w')
         for root, dirs, files in os.walk(self.dir_for_img):
             for file in files:
@@ -981,6 +997,7 @@ class ScanWindow(QMainWindow):
         self.unsaved = False
 
         self.main_window.open_file(file_name)
+        self.vidik.work = True
         return True
 
     # Обработчики событий формы и ее компонентов
@@ -1151,7 +1168,7 @@ class VideoStreamThread(QThread):
                 ret, self.video_img = self.video_stream.read()
                 if ret:
                     self.changePixmap.emit(self.numpy_to_pixmap(self.video_img))
-                    # time.sleep(0.1)
+                    time.sleep(0.02)
                     # self.lbl.repaint()
             else:
                 time.sleep(0.1)
@@ -1387,7 +1404,7 @@ class TableController:
 
     def get_request(self, x_step: int, y_step: int, z_step: int, mode: str):
         self.execute = True
-        self.vidik.work = False
+        # self.vidik.work = False
         data = {
             "x": -x_step,
             "y": y_step,
@@ -1408,7 +1425,7 @@ class TableController:
         self.operation_status = result_str['status']
         self.server_status = result_str['status']
         self.execute = False
-        self.vidik.work = True
+        # self.vidik.work = True
     # def coord_init(self):
     #     init_thread = Thread(target=self.coord_init_in_thread)
     #     init_thread.start()

@@ -982,7 +982,7 @@ class MainWindow(QMainWindow):
         if self.prepare_to_close_file():
             if not self.scan_window:
                 self.scan_window = scan.ScanWindow(self)
-            self.scan_window.show()
+            self.scan_window.showMaximized()
             self.hide()
 
     def save_file_ass(self):
