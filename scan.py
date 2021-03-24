@@ -41,9 +41,9 @@ class ScanWindow(QMainWindow):
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
         self.program_settings = ProgramSettings(self.test)
-        self.table_controller = TableController(self.loop, self.program_settings, self.test)
+        self.lbl_img = LabelImg()
+        self.table_controller = TableController(self.loop, self.program_settings, self.lbl_img, self.test)
         # TEST Для удобства тестирования передаю в контроллер стола контроллер камеры
-        self.lbl_img = QLabel()
         # self.micros_controller = MicrosController(self.program_settings, self.test, self.lbl_img)
         # if self.table_controller.test:
         #     self.table_controller.micros_controller = self.micros_controller
@@ -125,7 +125,7 @@ class ScanWindow(QMainWindow):
 
         self.vidik = VideoStreamThread(self.video_stream, self.video_img, self)
         if not self.test:
-            self.vidik.changePixmap.connect(self.lbl_img.setPixmap)
+            self.vidik.changePixmap.connect(self.lbl_img.setPixmapMy)
             self.vidik.start()
 
         # self.table_controller.steps_in_mm = self.program_settings.table_settings.steps_in_mm
@@ -186,7 +186,7 @@ class ScanWindow(QMainWindow):
         # Меню "Станок"
         device_menu = menu_bar.addMenu("&Станок")
         device_menu_action_init = QAction("&Инициализация", self)
-        device_menu_action_init.setShortcut("Ctrl+N")
+        device_menu_action_init.setShortcut("Ctrl+I")
         device_menu_action_init.triggered.connect(self.device_init)
         device_menu.addAction(device_menu_action_init)
 
@@ -446,6 +446,10 @@ class ScanWindow(QMainWindow):
         if dlg_result > 0:
             self.table_controller.server_status = 'uninitialized'
 
+    # def device_init(self):
+    #     init_thread = Thread(target=self.device_init_in_thread)
+    #     init_thread.start()
+
     def device_init(self):
         self.control_elements_enabled(False)
         self.table_controller.coord_init()
@@ -456,6 +460,10 @@ class ScanWindow(QMainWindow):
     def device_check(self):
         self.table_controller.coord_check()
         self.setWindowTitle(str(self.table_controller))
+
+    # def device_move(self):
+    #     move_thread = Thread(target=self.device_move_in_thread)
+    #     move_thread.start()
 
     def device_move(self):
         self.control_elements_enabled(False)
@@ -490,9 +498,9 @@ class ScanWindow(QMainWindow):
             self.timer_continuous.start()
             # print("thread started")
         else:
-            # self.continuous_mode = False
             # self.thread_continuous.terminate()
             self.timer_continuous.stop()
+            self.continuous_mode = False
             # print("thread joined")
 
         # self.continuous_mode = status
@@ -506,6 +514,7 @@ class ScanWindow(QMainWindow):
         self.btn_move_mid.setEnabled(status)
         self.btn_border.setEnabled(status)
         self.btn_scan.setEnabled(status)
+        self.btn_save_scan.setEnabled(status)
         self.edt_border_x1.setEnabled(status)
         self.edt_border_y1.setEnabled(status)
         self.edt_border_x2.setEnabled(status)
@@ -1024,7 +1033,17 @@ class ScanWindow(QMainWindow):
     #         self.micros_controller.video_check, self.micros_controller.video_img \
     #             = self.micros_controller.video_stream.read()
     #         self.lbl_img.setPixmap(self.micros_controller.numpy_to_pixmap(self.micros_controller.video_img))
-            # self.lbl_img.repaint()
+    #         self.lbl_img.repaint()
+
+
+class LabelImg(QLabel):
+    def __init__(self):
+        super().__init__()
+        self.can_set = True
+
+    def setPixmapMy(self, a0: QtGui.QPixmap) -> None:
+        if self.can_set:
+            self.setPixmap(a0)
 
 
 # Класс направления - умеет выдавать следующее и предыдущее направление
@@ -1120,12 +1139,10 @@ class VideoStreamThread(QThread):
     def run(self):
         while self.work:
             ret, self.video_img = self.video_stream.read()
-            # rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            # convertToQtFormat = QImage(rgbImage.data, rgbImage.shape[1], rgbImage.shape[0], QImage.Format_RGB888)
-            # convertToQtFormat = QPixmap.fromImage(convertToQtFormat)
-            # p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
             if ret:
                 self.changePixmap.emit(self.numpy_to_pixmap(self.video_img))
+                # time.sleep(0.1)
+                # self.lbl.repaint()
 
     @staticmethod
     def numpy_to_q_image(image):
@@ -1291,8 +1308,10 @@ class VideoStreamThread(QThread):
 # 2. Запускает сервер на Raspberry pi
 # 3. Управляет движениями станка
 class TableController:
-    def __init__(self, loop, program_settings: ProgramSettings, test=False, hostname="192.168.42.100", port=8080):
+    def __init__(self, loop, program_settings: ProgramSettings, lbl: LabelImg, test=False,
+                 hostname="192.168.42.100", port=8080):
         self.program_settings = program_settings
+        self.lbl = lbl
         # Параметры подключения к серверу raspberry pi
         self.hostname = hostname
         self.port = port
@@ -1306,6 +1325,7 @@ class TableController:
         self.manual_left_count = 0
         self.manual_right_count = 0
         self.loop = loop
+        self.execute = False
         # self.thread_server = Thread(target=self.server_start)
         self.thread_server = TableServerThread(self.hostname)
         # self.thread_server = QThread()
@@ -1353,8 +1373,9 @@ class TableController:
             result = await ws.recv()
             return result
 
-    @staticmethod
-    def get_request(x_step: int, y_step: int, z_step: int, mode: str):
+    def get_request(self, x_step: int, y_step: int, z_step: int, mode: str):
+        self.execute = True
+        self.lbl.can_set = False
         data = {
             "x": -x_step,
             "y": y_step,
@@ -1374,6 +1395,11 @@ class TableController:
 
         self.operation_status = result_str['status']
         self.server_status = result_str['status']
+        self.execute = False
+        self.lbl.can_set = True
+    # def coord_init(self):
+    #     init_thread = Thread(target=self.coord_init_in_thread)
+    #     init_thread.start()
 
     def coord_init(self):
         if not self.test:
@@ -1412,7 +1438,6 @@ class TableController:
             # loop = asyncio.get_event_loop()
             data = self.get_request(x_step=int(dx), y_step=int(dy), z_step=int(dz), mode=mode)
             result = self.loop.run_until_complete(self.produce(message=data, host=self.hostname, port=self.port))
-
             self.result_unpack(result)
         else:
             if mode == "discrete":
