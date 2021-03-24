@@ -42,42 +42,6 @@ class ScanWindow(QMainWindow):
         self.loop = asyncio.get_event_loop()
         self.program_settings = ProgramSettings(self.test)
         self.lbl_img = LabelImg()
-        self.table_controller = TableController(self.loop, self.program_settings, self.lbl_img, self.test)
-        # TEST Для удобства тестирования передаю в контроллер стола контроллер камеры
-        # self.micros_controller = MicrosController(self.program_settings, self.test, self.lbl_img)
-        # if self.table_controller.test:
-        #     self.table_controller.micros_controller = self.micros_controller
-        #     self.table_controller.program_settings = self.program_settings
-
-        # if not self.table_controller.thread_server or not self.table_controller.thread_server.is_alive():
-        if not self.test:
-            self.table_controller.thread_server.start()
-        time.sleep(2.0)
-        # self.micros_controller.coord_check()
-        self.continuous_mode = False
-        self.closed = False
-        self.key_shift_pressed = False
-        # self.keyboard_buttons = {Qt.Key_Up: KeyboardButton(), Qt.Key_Right: KeyboardButton(),
-        #                          Qt.Key_Down: KeyboardButton(), Qt.Key_Left: KeyboardButton(),
-        #                          Qt.Key_Plus: KeyboardButton(), Qt.Key_Minus: KeyboardButton()}
-        self.keyboard_buttons = {Qt.Key_W: KeyboardButton(), Qt.Key_D: KeyboardButton(),
-                                 Qt.Key_S: KeyboardButton(), Qt.Key_A: KeyboardButton(),
-                                 Qt.Key_Plus: KeyboardButton(), Qt.Key_Minus: KeyboardButton()}
-        # Пока отключу лишний процесс ручного управления temp
-        # self.thread_continuous = Thread(target=self.continuous_move)
-
-        # self.thread_continuous = QThread()
-        # self.thread_continuous.started.connect(self.continuous_move)
-
-        self.timer_continuous = QTimer()
-        self.timer_continuous.setInterval(1)
-        self.timer_continuous.timeout.connect(self.continuous_move)
-
-        # if not self.test:
-        #     self.thread_continuous.start()
-
-        # self.thread_video = Thread(target=self.video_thread)
-        # self.thread_video.start()
 
         self.dir_for_img = "SavedImg"
         self.path_for_xml_file = os.path.join(self.dir_for_img, "settings.xml")
@@ -127,6 +91,45 @@ class ScanWindow(QMainWindow):
         if not self.test:
             self.vidik.changePixmap.connect(self.lbl_img.setPixmapMy)
             self.vidik.start()
+
+        self.table_controller = TableController(self.loop, self.program_settings, self.vidik, self.test)
+        # TEST Для удобства тестирования передаю в контроллер стола контроллер камеры
+        # self.micros_controller = MicrosController(self.program_settings, self.test, self.lbl_img)
+        # if self.table_controller.test:
+        #     self.table_controller.micros_controller = self.micros_controller
+        #     self.table_controller.program_settings = self.program_settings
+
+        # if not self.table_controller.thread_server or not self.table_controller.thread_server.is_alive():
+        if not self.test:
+            self.table_controller.thread_server.start()
+        time.sleep(2.0)
+        # self.micros_controller.coord_check()
+        self.continuous_mode = False
+        self.closed = False
+        self.key_shift_pressed = False
+        # self.keyboard_buttons = {Qt.Key_Up: KeyboardButton(), Qt.Key_Right: KeyboardButton(),
+        #                          Qt.Key_Down: KeyboardButton(), Qt.Key_Left: KeyboardButton(),
+        #                          Qt.Key_Plus: KeyboardButton(), Qt.Key_Minus: KeyboardButton()}
+        self.keyboard_buttons = {Qt.Key_W: KeyboardButton(), Qt.Key_D: KeyboardButton(),
+                                 Qt.Key_S: KeyboardButton(), Qt.Key_A: KeyboardButton(),
+                                 Qt.Key_Plus: KeyboardButton(), Qt.Key_Minus: KeyboardButton()}
+        # Пока отключу лишний процесс ручного управления temp
+        # self.thread_continuous = Thread(target=self.continuous_move)
+
+        # self.thread_continuous = QThread()
+        # self.thread_continuous.started.connect(self.continuous_move)
+
+        self.timer_continuous = QTimer()
+        self.timer_continuous.setInterval(1)
+        self.timer_continuous.timeout.connect(self.continuous_move)
+
+        # if not self.test:
+        #     self.thread_continuous.start()
+
+        # self.thread_video = Thread(target=self.video_thread)
+        # self.thread_video.start()
+
+
 
         # self.table_controller.steps_in_mm = self.program_settings.table_settings.steps_in_mm
         # self.table_controller.limits_mm = self.program_settings.table_settings.limits_mm
@@ -381,6 +384,7 @@ class ScanWindow(QMainWindow):
             for i in range(10):
                 self.video_stream.read()
             check, img = self.video_stream.read()
+            # img = self.vidik.video_img
             # self.video_timer.start()
             if crop:
                 # return np.copy(img[self.frame[3]-1:self.frame[1]:-1, self.frame[2]-1:self.frame[0]:-1, :])
@@ -392,6 +396,8 @@ class ScanWindow(QMainWindow):
 
     # Тестовая обертка функции движения, чтобы обходиться без подключенного станка
     def coord_move(self, coord, mode="discrete", crop=False):
+        if not self.test:
+            self.vidik.work = False
         self.table_controller.coord_move(coord, mode)
         if self.table_controller.test or mode != "continuous":
             # snap = self.micros_controller.snap(int(self.pixels_in_mm * (self.table_controller.coord_mm[0]
@@ -413,6 +419,7 @@ class ScanWindow(QMainWindow):
                 self.lbl_img.repaint()
             self.setWindowTitle(str(self.table_controller))
             return snap
+        self.vidik.work = True
         return None
 
     def closeEvent(self, event):
@@ -449,6 +456,7 @@ class ScanWindow(QMainWindow):
     # def device_init(self):
     #     init_thread = Thread(target=self.device_init_in_thread)
     #     init_thread.start()
+    #     print("init start")
 
     def device_init(self):
         self.control_elements_enabled(False)
@@ -464,6 +472,7 @@ class ScanWindow(QMainWindow):
     # def device_move(self):
     #     move_thread = Thread(target=self.device_move_in_thread)
     #     move_thread.start()
+    #     print("move start")
 
     def device_move(self):
         self.control_elements_enabled(False)
@@ -1137,12 +1146,15 @@ class VideoStreamThread(QThread):
         QThread.__init__(self, parent=parent)
 
     def run(self):
-        while self.work:
-            ret, self.video_img = self.video_stream.read()
-            if ret:
-                self.changePixmap.emit(self.numpy_to_pixmap(self.video_img))
-                # time.sleep(0.1)
-                # self.lbl.repaint()
+        while True:
+            if self.work:
+                ret, self.video_img = self.video_stream.read()
+                if ret:
+                    self.changePixmap.emit(self.numpy_to_pixmap(self.video_img))
+                    # time.sleep(0.1)
+                    # self.lbl.repaint()
+            else:
+                time.sleep(0.1)
 
     @staticmethod
     def numpy_to_q_image(image):
@@ -1308,10 +1320,10 @@ class VideoStreamThread(QThread):
 # 2. Запускает сервер на Raspberry pi
 # 3. Управляет движениями станка
 class TableController:
-    def __init__(self, loop, program_settings: ProgramSettings, lbl: LabelImg, test=False,
+    def __init__(self, loop, program_settings: ProgramSettings, vidik: VideoStreamThread, test=False,
                  hostname="192.168.42.100", port=8080):
         self.program_settings = program_settings
-        self.lbl = lbl
+        self.vidik = vidik
         # Параметры подключения к серверу raspberry pi
         self.hostname = hostname
         self.port = port
@@ -1375,7 +1387,7 @@ class TableController:
 
     def get_request(self, x_step: int, y_step: int, z_step: int, mode: str):
         self.execute = True
-        self.lbl.can_set = False
+        self.vidik.work = False
         data = {
             "x": -x_step,
             "y": y_step,
@@ -1396,7 +1408,7 @@ class TableController:
         self.operation_status = result_str['status']
         self.server_status = result_str['status']
         self.execute = False
-        self.lbl.can_set = True
+        self.vidik.work = True
     # def coord_init(self):
     #     init_thread = Thread(target=self.coord_init_in_thread)
     #     init_thread.start()
