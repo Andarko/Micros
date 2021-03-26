@@ -8,7 +8,7 @@ import numpy as np
 import os.path
 import tempfile
 import zipfile
-from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QHBoxLayout, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog, QVBoxLayout, QLabel
 from PyQt5.QtWidgets import QMainWindow, QPushButton, QAction
 from PyQt5.QtWidgets import QTextEdit, QSizePolicy, QGridLayout, QErrorMessage, QCheckBox
 from PyQt5.QtWidgets import QDoubleSpinBox, QMessageBox, QDockWidget
@@ -20,8 +20,6 @@ from lxml import etree
 from SettingsDialog import SettingsDialog, ProgramSettings
 import xml.etree.ElementTree as XmlET
 import scan
-import export_img_dialog
-# import ScanWindow from scan
 
 
 class Point(object):
@@ -139,7 +137,6 @@ class SavedData(object):
                 if img_p.shape[0] == 0:
                     continue
                 # Подготовка обрезанных изображений пониженного качества, в т.ч. миникарты
-                img_p1 = np.zeros(0)
                 img_p2 = np.zeros(0)
                 if replace or not os.path.exists(os.path.join(self.folder,
                                                               "P1_" + str(i+1) + "_" + str(j+1) + ".jpg")) \
@@ -206,7 +203,8 @@ class SavedData(object):
             ca_height = XmlET.SubElement(con_area, "Height")
             ca_height.text = str(self.connectionArea.height)
             tree = XmlET.ElementTree(root)
-            with open(xml_file, "w") as f_obj:
+            # with open(xml_file, "w") as f_obj:
+            with open(xml_file, "w"):
                 tree.write(xml_file)
             return True
         except Exception:
@@ -357,9 +355,13 @@ class ImageView(object):
             self.easy_merge(new_scale_index, new_rect)
         elif new_rect.width > 0 and new_rect.height > 0:
             # 1. Вырезаем видимую часть старого изображения
-            first_area_of_intersect_rect = self.saved_data.arrayImagesSize[new_scale_index][intersect_rect.y][intersect_rect.x]
-            last_area_of_intersect_rect = self.saved_data.arrayImagesSize[new_scale_index][intersect_rect.y + intersect_rect.height - 1][intersect_rect.x + intersect_rect.width - 1]
-            first_area_of_current_rect = self.saved_data.arrayImagesSize[new_scale_index][self.curRect.y][self.curRect.x]
+            first_area_of_intersect_rect = \
+                self.saved_data.arrayImagesSize[new_scale_index][intersect_rect.y][intersect_rect.x]
+            last_area_of_intersect_rect = \
+                self.saved_data.arrayImagesSize[new_scale_index][intersect_rect.y + intersect_rect.height
+                                                                 - 1][intersect_rect.x + intersect_rect.width - 1]
+            first_area_of_current_rect = \
+                self.saved_data.arrayImagesSize[new_scale_index][self.curRect.y][self.curRect.x]
             y1_inter_in_current = first_area_of_intersect_rect.y - first_area_of_current_rect.y
             x1_inter_in_current = first_area_of_intersect_rect.x - first_area_of_current_rect.x
             y2_inter_in_current = last_area_of_intersect_rect.y - first_area_of_current_rect.y
@@ -506,10 +508,14 @@ class ImageView(object):
                 break
         self.get_new_preview(new_scale_index, Rect(x1_ind, y1_ind, x2_ind - x1_ind + 1, y2_ind - y1_ind + 1))
 
-        y1 = (int(self.offset.y) >> self.scaleIndex) - self.saved_data.arrayImagesSize[self.scaleIndex][y1_ind][x1_ind].y
-        x1 = (int(self.offset.x) >> self.scaleIndex) - self.saved_data.arrayImagesSize[self.scaleIndex][y1_ind][x1_ind].x
-        y2 = (int(y2_offset) >> self.scaleIndex) - self.saved_data.arrayImagesSize[self.scaleIndex][y1_ind][x1_ind].y
-        x2 = (int(x2_offset) >> self.scaleIndex) - self.saved_data.arrayImagesSize[self.scaleIndex][y1_ind][x1_ind].x
+        y1 = ((int(self.offset.y) >> self.scaleIndex)
+              - self.saved_data.arrayImagesSize[self.scaleIndex][y1_ind][x1_ind].y)
+        x1 = ((int(self.offset.x) >> self.scaleIndex)
+              - self.saved_data.arrayImagesSize[self.scaleIndex][y1_ind][x1_ind].x)
+        y2 = ((int(y2_offset) >> self.scaleIndex)
+              - self.saved_data.arrayImagesSize[self.scaleIndex][y1_ind][x1_ind].y)
+        x2 = ((int(x2_offset) >> self.scaleIndex)
+              - self.saved_data.arrayImagesSize[self.scaleIndex][y1_ind][x1_ind].x)
 
         view = np.copy(self.sumImg[y1:y2, x1:x2, :])
 
@@ -641,7 +647,7 @@ class MainWindow(QMainWindow):
         self.programSettings = ProgramSettings()
 
         self.configFilePath = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "Config.xml")
-        self.loadConfig()
+        self.load_config()
 
     def init_ui(self):
         self.setWindowTitle('Micros')
@@ -711,19 +717,9 @@ class MainWindow(QMainWindow):
         # self.viewMenuMainPanel.setCheckable(True)
         # self.viewMenuMainPanel.setChecked(True)
         # view_menu.addAction(self.viewMenuMainPanel)
-        # Элементы формы
-        # Левые элементы
-        """leftLayout = QVBoxLayout()
-        btn1 = QPushButton("Load")
-        btn1.setMaximumWidth(150)
-        leftLayout.addWidget(btn1)
-        leftLayout.addStretch(0)
-        main_layout.addLayout(leftLayout)"""
 
         # Центральные элементы, включая изображение
-        main_layout = QHBoxLayout(self)
         main_widget = QWidget(self)
-        # main_widget.setLayout(main_layout)
         central_layout = QVBoxLayout()
         main_widget.setLayout(central_layout)
         # self.im_label = ClickedLabel()
@@ -746,7 +742,6 @@ class MainWindow(QMainWindow):
         # imQ = QImage(img.data,img.cols,img.cols,QImage.Format_Grayscale16)
         # pixmap = QPixmap("/home/krasnov/Pictures/P_20191028_093917.jpg")
         # pixmap = QPixmap.fromImage(imQ)
-
 
         # self.imLabel.setMaximumSize(1200, 800)
         # self.imLabel.setFixedSize(1200, 800)
@@ -777,8 +772,8 @@ class MainWindow(QMainWindow):
         # self.minimapLabel.setFixedSize(pixmapMini.size())
         self.minimap_label.installEventFilter(self)
 
-        minimap_layout.setRowStretch(0,1)
-        minimap_layout.setColumnStretch(0,1)
+        minimap_layout.setRowStretch(0, 1)
+        minimap_layout.setColumnStretch(0, 1)
         minimap_layout.addWidget(self.minimap_label, 1, 1)
 
         message_edit = QTextEdit(self)
@@ -789,7 +784,7 @@ class MainWindow(QMainWindow):
         message_edit.setFixedHeight(100)
         message_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         central_layout.addWidget(message_edit)
-        # main_layout.addLayout(central_layout)
+
         # Правые элементы
         self.right_doc_widget.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
         right_layout = QVBoxLayout(self)
@@ -828,8 +823,6 @@ class MainWindow(QMainWindow):
         self.right_doc_widget.setWidget(right_dock_widget_contents)
         self.right_doc_widget.installEventFilter(self)
 
-        # main_layout.addLayout(right_layout)
-
         self.setCentralWidget(main_widget)
         self.addDockWidget(Qt.RightDockWidgetArea, self.right_doc_widget)
 
@@ -843,21 +836,22 @@ class MainWindow(QMainWindow):
 
     def save_config(self):
         root = XmlET.Element("Root")
-        apptRC = XmlET.Element("FullLoadImageMemoryLimit")
-        apptRC.text = "1024*1024*1024"
-        root.append(apptRC)
+        appt_rc = XmlET.Element("FullLoadImageMemoryLimit")
+        appt_rc.text = "1024*1024*1024"
+        root.append(appt_rc)
         tree = XmlET.ElementTree(root)
-        with open(self.configFilePath, "w") as fobj:
+        # with open(self.configFilePath, "w") as fobj:
+        with open(self.configFilePath, "w"):
             tree.write(self.configFilePath)
 
-    def loadConfig(self):
+    def load_config(self):
         if os.path.exists(self.configFilePath):
             with open(self.configFilePath) as fobj:
                 xml = fobj.read()
                 root = etree.fromstring(xml)
-                for appt in root.getchildren():
-                    if appt.tag == "FullLoadImageMemoryLimit":
-                        mem_limit_text = appt.text
+                for elem in root.getchildren():
+                    if elem.tag == "FullLoadImageMemoryLimit":
+                        mem_limit_text = elem.text
                         for ch in "xXхХ":
                             mem_limit_text = mem_limit_text.replace(ch, "*")
                         self.programSettings.fullLoadImageMemoryLimit = eval(mem_limit_text)
@@ -865,7 +859,7 @@ class MainWindow(QMainWindow):
             self.save_config()
         return
 
-    def image_move(self, pos = QPoint()):
+    def image_move(self, pos=QPoint()):
         if self.status == ImageStatus.Move:
             self.imageView.offset.x = self.startMousePos.x - pos.x() / self.imageView.scale
             self.imageView.offset.y = self.startMousePos.y - pos.y() / self.imageView.scale
@@ -904,8 +898,10 @@ class MainWindow(QMainWindow):
                     new_scale = self.minScale
                     self.imageView.scale = new_scale
 
-                self.imageView.offset.x += event.pos().x() * (new_scale - self.imageView.scale) / (new_scale * self.imageView.scale)
-                self.imageView.offset.y += event.pos().y() * (new_scale - self.imageView.scale) / (new_scale * self.imageView.scale)
+                self.imageView.offset.x += event.pos().x() * ((new_scale - self.imageView.scale)
+                                                              / (new_scale * self.imageView.scale))
+                self.imageView.offset.y += event.pos().y() * ((new_scale - self.imageView.scale)
+                                                              / (new_scale * self.imageView.scale))
                 self.scale_edit.setValue(new_scale)
                 self.set_new_view()
             elif event.type() == QEvent.Resize:
@@ -915,8 +911,12 @@ class MainWindow(QMainWindow):
                 # print('mouse press event = ', event.pos())
                 self.status = ImageStatus.MinimapMove
                 if self.savedData.rowCount > 0:
-                    self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y / self.minimap_label.size().height() - 0.5 * self.im_label.size().height() / self.imageView.scale
-                    self.imageView.offset.x = event.pos().x() * self.savedData.arrayImagesSize[0][0][-1].x / self.minimap_label.size().width() - 0.5 * self.im_label.size().width() / self.imageView.scale
+                    self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y
+                    self.imageView.offset.y /= self.minimap_label.size().height()
+                    self.imageView.offset.y -= 0.5 * self.im_label.size().height() / self.imageView.scale
+                    self.imageView.offset.x = event.pos().x() * self.savedData.arrayImagesSize[0][0][-1].x
+                    self.imageView.offset.x /= self.minimap_label.size().width()
+                    self.imageView.offset.x -= 0.5 * self.im_label.size().width() / self.imageView.scale
                     self.set_new_view()
             elif event.type() == QEvent.MouseButtonRelease:
                 self.status = ImageStatus.Idle
@@ -924,8 +924,12 @@ class MainWindow(QMainWindow):
                 # self.setWindowTitle(str(event.pos()))
                 self.status = ImageStatus.MinimapMove
                 if self.savedData.rowCount > 0:
-                    self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y / self.minimap_label.size().height() - 0.5 * self.im_label.size().height() / self.imageView.scale
-                    self.imageView.offset.x = event.pos().x() * self.savedData.arrayImagesSize[0][0][-1].x / self.minimap_label.size().width() - 0.5 * self.im_label.size().width() / self.imageView.scale
+                    self.imageView.offset.y = event.pos().y() * self.savedData.arrayImagesSize[0][-1][0].y
+                    self.imageView.offset.y /= self.minimap_label.size().height()
+                    self.imageView.offset.y -= 0.5 * self.im_label.size().height() / self.imageView.scale
+                    self.imageView.offset.x = event.pos().x() * self.savedData.arrayImagesSize[0][0][-1].x
+                    self.imageView.offset.x /= self.minimap_label.size().width()
+                    self.imageView.offset.x -= 0.5 * self.im_label.size().width() / self.imageView.scale
                     self.set_new_view()
         elif obj is self.right_doc_widget:
             if event.type() == QEvent.Hide:
@@ -934,7 +938,8 @@ class MainWindow(QMainWindow):
 
     def resized(self):
         if self.savedData and self.savedData.rowCount > 0:
-            self.minScale = max(self.im_label.size().height() / self.savedData.arrayImagesSize[0][-1][0].y, self.im_label.size().width() / self.savedData.arrayImagesSize[0][0][-1].x)
+            self.minScale = max(self.im_label.size().height() / self.savedData.arrayImagesSize[0][-1][0].y,
+                                self.im_label.size().width() / self.savedData.arrayImagesSize[0][0][-1].x)
             if self.scale_edit.value() < self.minScale:
                 self.scale_edit.setValue(self.minScale)
         self.set_new_view()
@@ -955,12 +960,14 @@ class MainWindow(QMainWindow):
             # self.scan_window.thread_continuous.join()
             if self.scan_window.vidik.isRunning():
                 self.scan_window.vidik.work = False
-                # self.scan_window.vidik.terminate()
-                print("vidik.terminate()")
+                self.scan_window.vidik.terminate()
+                # print("vidik.terminate()")
             # self.scan_window.table_controller.thread_server.join()
-            if self.scan_window.table_controller.thread_server.isRunning():
+            if not self.scan_window.table_controller.thread_server.isRunning():
                 print("table_controller.thread_server.terminate()")
                 self.scan_window.table_controller.thread_server.terminate()
+        if self.scan_window.timer_continuous.isActive():
+            self.scan_window.timer_continuous.stop()
         if os.path.exists(self.EXTRACT_TEMP_SUB_FOLDER):
             shutil.rmtree(self.EXTRACT_TEMP_SUB_FOLDER)
 
@@ -1028,7 +1035,7 @@ class MainWindow(QMainWindow):
                     z.write(os.path.join(self.EXTRACT_TEMP_SUB_FOLDER, file), file, compress_type=zipfile.ZIP_DEFLATED)
         self.modified = False
         self.setWindowTitle("Micros - " + self.file_name)
-        dlg_result = QMessageBox.question(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
+        QMessageBox.question(self, "Info Dialog", "Файл сохранен", QMessageBox.Ok, QMessageBox.Ok)
 
     def open_file(self, file_name=""):
         # sel_filter = "Microscope scans (*.misc)"

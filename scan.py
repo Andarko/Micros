@@ -5,6 +5,7 @@
 
 import asyncio
 # import shutil
+import subprocess
 import time
 import os
 import websockets
@@ -399,7 +400,7 @@ class ScanWindow(QMainWindow):
 
     # Тестовая обертка функции движения, чтобы обходиться без подключенного станка
     def coord_move(self, coord, mode="discrete", crop=False):
-        if not self.test:
+        if not self.test and mode != "continuous":
             self.vidik.work = False
         self.table_controller.coord_move(coord, mode)
         if self.table_controller.test or mode != "continuous":
@@ -957,9 +958,11 @@ class ScanWindow(QMainWindow):
         with open(self.path_for_xml_file, "w"):
             tree.write(self.path_for_xml_file)
         self.btn_save_scan.setEnabled(True)
-        QMessageBox.information(self, "Info Dialog", "Сканирование завершено", QMessageBox.Ok, QMessageBox.Ok)
+        # QMessageBox.information(self, "Info Dialog", "Сканирование завершено", QMessageBox.Ok, QMessageBox.Ok)
         self.unsaved = True
         self.vidik.work = True
+
+        self.save_scan()
 
     # Сохранение изображений в архивный файл
     def save_scan(self):
@@ -1146,11 +1149,10 @@ class TableServerThread(QThread):
         QThread.__init__(self, parent=parent)
 
     def run(self) -> None:
-        shell = Terminal(["ssh pi@" + self.hostname, "python3 server.py", ])
-        shell.run()
-        # while True:
-        #     print("server run")
-        #     time.sleep(2)
+        # shell = Terminal(["ssh pi@" + self.hostname, "python3 server.py", ])
+        # shell.run()
+        subprocess.run(["ssh", "pi@" + self.hostname])
+        subprocess.run(["python3", "server.py"])
 
 
 class VideoStreamThread(QThread):
