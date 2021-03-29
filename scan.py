@@ -403,6 +403,7 @@ class ScanWindow(QMainWindow):
         if not self.test and mode != "continuous":
             self.vidik.work = False
         self.table_controller.coord_move(coord, mode)
+        self.setWindowTitle(str(self.table_controller))
         if self.table_controller.test or mode != "continuous":
             # snap = self.micros_controller.snap(int(self.pixels_in_mm * (self.table_controller.coord_mm[0]
             #                                                             - self.snap_width_mm_half)),
@@ -421,7 +422,6 @@ class ScanWindow(QMainWindow):
             if self.test:
                 self.lbl_img.setPixmap(self.vidik.numpy_to_pixmap(snap))
                 self.lbl_img.repaint()
-            self.setWindowTitle(str(self.table_controller))
             return snap
         # self.lbl_img.setPixmap(self.vidik.numpy_to_pixmap(snap))
         # self.lbl_img.repaint()
@@ -487,17 +487,18 @@ class ScanWindow(QMainWindow):
         self.control_elements_enabled(False)
         input_dialog = QInputDialog()
         text, ok = input_dialog.getText(self,
-                                        "Введите дистанцию в миллиметрах",
-                                        "Дистанция:",
+                                        "Введите координаты в миллиметрах",
+                                        "Координаты:",
                                         QLineEdit.Normal,
-                                        str(int(self.table_controller.coord_mm[0])) + ';'
-                                        + str(int(self.table_controller.coord_mm[1])) + ';'
-                                        + str(int(self.table_controller.coord_mm[2])))
+                                        "{0:.2f}; {1:.2f}; {2:.2f}".format(self.table_controller.coord_mm[0],
+                                                                         self.table_controller.coord_mm[1],
+                                                                         self.table_controller.coord_mm[2]))
 
         if ok:
-            coord = [int(item) for item in text.split(';')]
-            self.coord_move(coord)
-            self.setWindowTitle(str(self.table_controller))
+            coord = [float(item) for item in str.replace(str.replace(text, ',', '.'), ' ', '').split(';')]
+            if len(coord) == 3:
+                self.coord_move(coord)
+                self.setWindowTitle(str(self.table_controller))
 
         self.control_elements_enabled(True)
         self.vidik.work = True
@@ -1146,13 +1147,19 @@ class KeyboardButton:
 class TableServerThread(QThread):
     def __init__(self, hostname, parent=None):
         self.hostname = hostname
+        self.work = True
+        self.stopped = False
         QThread.__init__(self, parent=parent)
 
     def run(self) -> None:
-        # shell = Terminal(["ssh pi@" + self.hostname, "python3 server.py", ])
-        # shell.run()
-        subprocess.run(["ssh", "pi@" + self.hostname])
-        subprocess.run(["python3", "server.py"])
+        shell = Terminal(["ssh pi@" + self.hostname, "python3 server.py", ])
+        shell.run()
+        while self.work:
+            time.sleep(1)
+        shell = None
+        self.stopped = True
+        # subprocess.run(["ssh", "-tt", "pi@" + self.hostname])
+        # subprocess.run(["python3", "server.py"])
 
 
 class VideoStreamThread(QThread):
@@ -1372,8 +1379,11 @@ class TableController:
         # self.programSettings: ProgramSettings = None
 
     def __repr__(self):
-        return "coord = " + str(self.coord_mm) + "; server status = " + self.server_status \
-               + "; last op status = " + self.operation_status
+        # return "coord = " + str(self.coord_mm) + "; server status = " + self.server_status \
+        #        + "; last op status = " + self.operation_status
+        return "coord = [{0:.2f}, {1:.2f}, {2:.2f}]; server status = {3}; last op status = {4}".format(
+            self.coord_mm[0], self.coord_mm[1], self.coord_mm[2], self.server_status, self.operation_status
+        )
 
     def __get_steps_in_mm(self):
         return self.program_settings.table_settings.steps_in_mm
@@ -1420,9 +1430,9 @@ class TableController:
         result_str = json.loads(result)
         # Переворот по оси Х
         self.coord_step = [self.limits_step[0] - result_str['x'], result_str['y'], result_str['z']]
-        self.coord_mm = [int(self.coord_step[0] / self.steps_in_mm),
-                         int(self.coord_step[1] / self.steps_in_mm),
-                         int(self.coord_step[2] / self.steps_in_mm)]
+        self.coord_mm = [(self.coord_step[0] / self.steps_in_mm),
+                         (self.coord_step[1] / self.steps_in_mm),
+                         (self.coord_step[2] / self.steps_in_mm)]
 
         self.operation_status = result_str['status']
         self.server_status = result_str['status']

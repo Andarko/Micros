@@ -1,6 +1,7 @@
 import cv2
 import sys
 import datetime
+import time
 import uuid
 import shutil
 from enum import Enum
@@ -963,9 +964,15 @@ class MainWindow(QMainWindow):
                 self.scan_window.vidik.terminate()
                 # print("vidik.terminate()")
             # self.scan_window.table_controller.thread_server.join()
-            if not self.scan_window.table_controller.thread_server.isRunning():
-                print("table_controller.thread_server.terminate()")
-                self.scan_window.table_controller.thread_server.terminate()
+
+            # if not self.scan_window.table_controller.thread_server.isRunning():
+            print("thread_server terminate start")
+            # self.scan_window.table_controller.thread_server.terminate()
+            self.scan_window.table_controller.thread_server.work = False
+            while not self.scan_window.table_controller.thread_server.stopped:
+                time.sleep(0.1)
+            print("thread_server terminate end")
+
         if self.scan_window.timer_continuous.isActive():
             self.scan_window.timer_continuous.stop()
         if os.path.exists(self.EXTRACT_TEMP_SUB_FOLDER):
