@@ -166,6 +166,7 @@ class ScanWindow(QMainWindow):
         self.lbl_coord = QLabel("Текущие координаты:")
         self.btn_init = QPushButton("Инициализация")
         self.btn_move_mid = QPushButton("Двигать в середину")
+        self.btn_move_work_height = QPushButton("Занять рабочую высоту")
         self.btn_move = QPushButton("Двигать в ...")
         self.btn_manual = QPushButton("Ручной режим")
         self.edt_border_x1 = QSpinBox()
@@ -249,6 +250,8 @@ class ScanWindow(QMainWindow):
         right_layout.addWidget(self.btn_move)
         self.btn_move_mid.clicked.connect(self.device_move_mid)
         right_layout.addWidget(self.btn_move_mid)
+        self.btn_move_work_height.clicked.connect(self.device_move_work_height)
+        right_layout.addWidget(self.btn_move_work_height)
 
         self.btn_manual.setCheckable(True)
         self.btn_manual.setChecked(False)
@@ -507,8 +510,18 @@ class ScanWindow(QMainWindow):
         self.vidik.work = False
         self.control_elements_enabled(False)
         x = int(self.table_controller.limits_mm[0] / 2)
-        y = int(self.table_controller.limits_mm[1] / 2)
+        y = int(self.table_controller.limits_mm[1] / 3)
         self.coord_move([x, y, self.table_controller.coord_mm[2]])
+        self.setWindowTitle(str(self.table_controller))
+        self.control_elements_enabled(True)
+        self.vidik.work = True
+
+    def device_move_work_height(self):
+        self.vidik.work = False
+        self.control_elements_enabled(False)
+        self.coord_move([self.table_controller.coord_mm[0],
+                         self.table_controller.coord_mm[1],
+                         self.work_height])
         self.setWindowTitle(str(self.table_controller))
         self.control_elements_enabled(True)
         self.vidik.work = True
@@ -534,6 +547,7 @@ class ScanWindow(QMainWindow):
         self.btn_init.setEnabled(status)
         self.btn_move.setEnabled(status)
         self.btn_move_mid.setEnabled(status)
+        self.btn_move_work_height.setEnabled(status)
         self.btn_border.setEnabled(status)
         self.btn_scan.setEnabled(status)
         self.btn_save_scan.setEnabled(status)
@@ -623,6 +637,7 @@ class ScanWindow(QMainWindow):
                     # if previous_direction:
                     if direction.abs_index > 0:
                         # Проверяем - не ушли ли мы вовнутрь или наружу объекта
+                        # stuck - это проверка, что мы попали в петлю
                         stuck = False
                         correction_list = list()
                         while not stuck:
@@ -631,12 +646,17 @@ class ScanWindow(QMainWindow):
                                                                         [self.delta_x, self.delta_y])
                             correction_list.append(correction_count)
                             if len(correction_list) >= 4:
+                                # Проверка на повторяющиеся коррекции
                                 if correction_list[-1] == correction_list[-3]:
                                     if correction_list[-2] == correction_list[-4]:
                                         if correction_list[-1] * correction_list[-2] < 0:
                                             correction_count //= 2
                                             stuck = True
-                                            self.save_test_data("unstuck!")
+                                            self.save_test_data("unstuck doubled!")
+                                # На особенно запущенный случай зацикливания
+                                if len(correction_list) >= 12:
+                                    stuck = True
+                                    self.save_test_data("unstuck loop repeatedly!")
                             if correction_count == 0:
                                 break
                             # Проверяем - не вышли ли мы за пределы стола
@@ -706,11 +726,21 @@ class ScanWindow(QMainWindow):
                         break
                 # previous_direction = direction
                 direction = direction.next()
+            print("all_x=" + str(all_x))
+            print("all_y=" + str(all_y))
+            min_x = min(all_x) + 3 * self.delta_x / self.pixels_in_mm[0]
+            min_y = min(all_y) + 3 * self.delta_y / self.pixels_in_mm[1]
+            max_x = max(all_x) - 3 * self.delta_x / self.pixels_in_mm[0]
+            max_y = max(all_y) - 3 * self.delta_y / self.pixels_in_mm[1]
 
-            self.edt_border_x1.setValue(min(all_x))
-            self.edt_border_y1.setValue(min(all_y))
-            self.edt_border_x2.setValue(max(all_x))
-            self.edt_border_y2.setValue(max(all_y))
+            # self.edt_border_x1.setValue(min(all_x))
+            # self.edt_border_y1.setValue(min(all_y))
+            # self.edt_border_x2.setValue(max(all_x))
+            # self.edt_border_y2.setValue(max(all_y))
+            self.edt_border_x1.setValue(min_x)
+            self.edt_border_y1.setValue(min_y)
+            self.edt_border_x2.setValue(max_x)
+            self.edt_border_y2.setValue(max_y)
         except Exception as e:
             raise
             QMessageBox.critical(self, "Критическая ошибка", "Произошла ошибка выполнения" + str(e),
@@ -748,6 +778,7 @@ class ScanWindow(QMainWindow):
         index = abs(direction[1])
         non_white_limit = int(0.03 * img.shape[index])
         middle = int(img.shape[1 - index] / 2)
+        # По-моему это смещение мида на 1 пиксель - фигня. Ниже сделал перестраховку от выхода за пределы картинки
         if direction[index] > 0:
             middle -= 1
         # Ищем хоть 1 пиксель объекта
@@ -755,6 +786,10 @@ class ScanWindow(QMainWindow):
         # for i in range(0, 6):
         for i in range(5, -6, -1):
             coord[index] = middle + i * delta[index] * direction[index]
+            if coord[index] >= img.shape[1 - index]:
+                coord[index] -= img.shape[1 - index] - 1
+            if coord[index] < 0:
+                coord[index] = 0
             non_white_count = 0
             for j in range(img.shape[index]):
                 coord[1 - index] = j

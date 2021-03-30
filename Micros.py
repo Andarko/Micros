@@ -969,8 +969,12 @@ class MainWindow(QMainWindow):
             print("thread_server terminate start")
             # self.scan_window.table_controller.thread_server.terminate()
             self.scan_window.table_controller.thread_server.work = False
+            try_count = 0
             while not self.scan_window.table_controller.thread_server.stopped:
-                time.sleep(0.1)
+                time.sleep(0.2)
+                try_count += 1
+                if try_count > 15:
+                    break
             print("thread_server terminate end")
 
         if self.scan_window.timer_continuous.isActive():
