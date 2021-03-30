@@ -611,7 +611,7 @@ class ScanWindow(QMainWindow):
             y = int(self.table_controller.limits_mm[1] / 3)
             if self.test:
                 y = int(self.table_controller.limits_mm[1] / 2)
-            snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
+            snap = self.coord_move([x, y, self.table_controller.coord_mm[2]], mode="discrete", crop=True)
 
             all_x = list()
             all_y = list()
@@ -678,7 +678,7 @@ class ScanWindow(QMainWindow):
                             # y -= int(self.delta_y * correction_count * previous_direction[1] / self.pixels_in_mm)
                             all_x.append(x)
                             all_y.append(y)
-                            snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
+                            snap = self.coord_move([x, y, self.table_controller.coord_mm[2]], mode="discrete", crop=True)
                             if correction_count > 0:
                                 self.save_test_data('x = ' + str(x) + '; y = ' + str(y) + ' inside correction')
                             elif correction_count < 0:
@@ -710,7 +710,7 @@ class ScanWindow(QMainWindow):
                         all_x.append(x)
                         all_y.append(y)
                         forward_count_total += forward_count
-                        snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
+                        snap = self.coord_move([x, y, self.table_controller.coord_mm[2]], mode="discrete", crop=True)
 
                         self.save_test_data('x = ' + str(x) + '; y = ' + str(y))
                     else:
@@ -721,7 +721,7 @@ class ScanWindow(QMainWindow):
                             y -= int(self.delta_y * direction[1] * (-forward_over_move) / self.pixels_in_mm[1])
                             all_x.append(x)
                             all_y.append(y)
-                            snap = self.coord_move([x, y, self.work_height], mode="discrete", crop=True)
+                            snap = self.coord_move([x, y, self.table_controller.coord_mm[2]], mode="discrete", crop=True)
                             self.save_test_data('x = ' + str(x) + '; y = ' + str(y) + ' forward correction')
                         break
                 # previous_direction = direction
@@ -950,7 +950,7 @@ class ScanWindow(QMainWindow):
                 x_range = range(0, count[0], 1)
             for i in x_range:
                 x = coord[0] + i * self.frame_width_mm
-                snap = self.coord_move([x, y, self.work_height], mode="discrete")
+                snap = self.coord_move([x, y, self.table_controller.coord_mm[2]], mode="discrete")
                 cv2.imwrite(os.path.join(self.dir_for_img, "S_{0}_{1}.jpg".format(j_r + 1, i + 1)), snap[:, :, :])
                 print('x = ' + str(x) + '; y = ' + str(y))
 
