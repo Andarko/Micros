@@ -833,7 +833,7 @@ class MainWindow(QMainWindow):
         self.move(300, 300)
         self.setMinimumSize(800, 600)
 
-        self.show()
+        self.showMaximized()
 
     def save_config(self):
         root = XmlET.Element("Root")
@@ -1117,47 +1117,73 @@ class MainWindow(QMainWindow):
         self.modified = self.savedData.prepare_scans(True)
 
     def btn_export_img_click(self):
-        img_size = Size()
-        img_size.width = 3000
-        img_size.height = 4000
-        con_area = Rect()
-        con_area.x = 1050
-        con_area.y = 1400
-        con_area.width = 900
-        con_area.height = 1200
+        if not self.EXTRACT_TEMP_SUB_FOLDER:
+            return
+        if self.savedData.rowCount < 1 or self.savedData.colCount < 1:
+            return
 
-        sum_img = np.arange(0)
-        for i in range (5):
-            y1 = con_area.y
-            if i == 0:
-                y1 = 0
-            y2 = con_area.y + con_area.height
-            if i == 4:
-                y2 = img_size.height
-            row_img = np.arange(0)
-            for j in range (11):
-                x1 = con_area.x
-                if j == 0:
-                    x1 = 0
-                x2 = con_area.x + con_area.width
-                if j == 10:
-                    x2 = img_size.width
-                file_name = "/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_" + \
-                            str(i+1) + "_" + str(j+1) + ".jpg"
-                img = cv2.imread(file_name)
-                img2 = np.copy(img[y1:y2, x1:x2, :])
-                if row_img.size == 0:
-                    row_img = np.copy(img2)
-                else:
-                    row_img = np.concatenate((row_img, img2), axis=1)
-
-            if sum_img.size == 0:
-                sum_img = np.copy(row_img)
+        a = QFileDialog.getSaveFileName(self, "Выберите место сохранения изображения", "/",
+                                        "All files (*.*);;JPEG (*.jpg)", "JPEG (*.jpg)")
+        if len(a[0]) > 0:
+            ext = os.path.splitext(a[0])
+            if ext[1] == ".jpg":
+                image_file_name = a[0]
             else:
-                sum_img = np.concatenate((sum_img, row_img), axis=0)
-
-        cv2.imwrite("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/sum_img.jpg",
-                    sum_img)
+                image_file_name = ext[0] + ".jpg"
+            if os.path.exists(image_file_name):
+                dlg_result = QMessageBox.question(self, "Confirm Dialog",
+                                                  "Файл уже существует. Хотите его перезаписать? " +
+                                                  "Это удалит данные в нем",
+                                                  QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if dlg_result == QMessageBox.No:
+                    return
+            self.imageView.easy_merge(0, Rect(0, 0, self.savedData.colCount, self.savedData.rowCount))
+            cv2.imwrite(image_file_name, self.imageView.sumImg)
+            self.imageView.sumImg
+            self.set_new_view()
+        else:
+            return
+        # img_size = Size()
+        # img_size.width = 3000
+        # img_size.height = 4000
+        # con_area = Rect()
+        # con_area.x = 1050
+        # con_area.y = 1400
+        # con_area.width = 900
+        # con_area.height = 1200
+        #
+        # sum_img = np.arange(0)
+        # for i in range (5):
+        #     y1 = con_area.y
+        #     if i == 0:
+        #         y1 = 0
+        #     y2 = con_area.y + con_area.height
+        #     if i == 4:
+        #         y2 = img_size.height
+        #     row_img = np.arange(0)
+        #     for j in range (11):
+        #         x1 = con_area.x
+        #         if j == 0:
+        #             x1 = 0
+        #         x2 = con_area.x + con_area.width
+        #         if j == 10:
+        #             x2 = img_size.width
+        #         file_name = "/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_" + \
+        #                     str(i+1) + "_" + str(j+1) + ".jpg"
+        #         img = cv2.imread(file_name)
+        #         img2 = np.copy(img[y1:y2, x1:x2, :])
+        #         if row_img.size == 0:
+        #             row_img = np.copy(img2)
+        #         else:
+        #             row_img = np.concatenate((row_img, img2), axis=1)
+        #
+        #     if sum_img.size == 0:
+        #         sum_img = np.copy(row_img)
+        #     else:
+        #         sum_img = np.concatenate((sum_img, row_img), axis=0)
+        #
+        # cv2.imwrite("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/sum_img.jpg",
+        #             sum_img)
 
     def set_new_view(self):
         if not self.savedData or self.savedData.rowCount == 0:
