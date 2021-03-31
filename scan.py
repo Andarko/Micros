@@ -801,57 +801,7 @@ class ScanWindow(QMainWindow):
                 return i
         return -5
 
-    # @staticmethod
-    # # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала от объекта
-    # # Возвращает - сколько надо сделать шагов "внутрь"
-    # def check_object_outside(img, direction, delta):
-    #     index = abs(direction[1])
-    #
-    #     middle = int(img.shape[1 - index] / 2)
-    #     if direction[index] > 0:
-    #         middle -= 1
-    #     # Ищем хоть 1 пиксель объекта
-    #     coord = [0, 0]
-    #     # for i in range(0, 6):
-    #     for i in range(0, -6, -1):
-    #         white = True
-    #         coord[index] = middle + i * delta[index] * direction[index]
-    #         for j in range(img.shape[index]):
-    #             coord[1 - index] = j
-    #             for k in range(3):
-    #                 if img[coord[1]][coord[0]][k] < 128:
-    #                     white = False
-    #             if not white:
-    #                 break
-    #         if not white:
-    #             return -i
-    #     return 5
-    #
-    # @staticmethod
-    # # Вспомогательная функция - перед поиском границ проверяем, что камера не уехала внутрь объекта
-    # # Возвращает - сколько надо сделать шагов "наружу"
-    # def check_object_inside(img, direction, delta):
-    #     index = abs(direction[1])
-    #
-    #     middle = int(img.shape[1 - index] / 2)
-    #     if direction[index] > 0:
-    #         middle -= 1
-    #     # Ищем хоть одну "белую" линию "снаружи". Если она есть - значит все нормально
-    #     coord = [0, 0]
-    #     for i in range(5, 0, -1):
-    #         white = True
-    #         coord[index] = middle + i * delta[index] * direction[index]
-    #         for j in range(img.shape[index]):
-    #             coord[1 - index] = j
-    #             for k in range(3):
-    #                 if img[coord[1]][coord[0]][k] < 128:
-    #                     white = False
-    #             if not white:
-    #                 break
-    #         if not white:
-    #             return i
-    #     return 0
-
+    # Сканирование по указанным координатам
     def scan(self):
         self.vidik.work = False
         if self.unsaved:
@@ -899,27 +849,6 @@ class ScanWindow(QMainWindow):
                     coord[i] += x_overage / 2
                     coord[i + 2] -= x_overage / 2
                     count[i] -= 1
-
-        # y_overage = (y2 - y1) % self.frame_height_mm
-        # y_count = int((y2 - y1) // self.frame_height_mm + 1)
-        # if y_overage > 0:
-        #     y_deficit = self.frame_height_mm - y_overage
-        #     y_count += 1
-        #     y2 += y_deficit / 2
-        #     y1 -= y_deficit / 2
-        #
-        #     # Проверка выхода за пределы стола
-        #     if y1 < 0:
-        #         y2 -= y1
-        #         y1 = 0
-        #     if y2 > self.table_controller.limits_mm[1]:
-        #         y1 -= y2 - self.table_controller.limits_mm[1]
-        #         y2 = self.table_controller.limits_mm[1]
-        #     # Если изображение никак не хочет влазить в пределы стола, то надо наоборот его уменьшить...
-        #     if y1 < 0:
-        #         y1 += y_overage / 2
-        #         y2 -= y_overage / 2
-        #         y_count -= 1
 
         print("x1={0}; y1={1}; x2={2}; y2={3}".format(coord[0], coord[1], coord[2], coord[3]))
         # Работа с директорией для сохранения изображений
@@ -999,6 +928,51 @@ class ScanWindow(QMainWindow):
         self.vidik.work = True
 
         self.save_scan()
+
+    # Сканирование без указания координат
+    def scan_without_borders(self):
+        self.vidik.work = False
+        if self.unsaved:
+            dlg_result = QMessageBox.question(self,
+                                              "Confirm Dialog",
+                                              "Данные последней съемки не сохранены. Хотите сперва их сохранить?",
+                                              QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                                              QMessageBox.Yes)
+            if dlg_result == QMessageBox.Yes:
+                if not self.save_scan():
+                    return
+            elif dlg_result == QMessageBox.Cancel:
+                return
+
+        if self.table_controller.server_status == 'uninitialized':
+            self.table_controller.coord_init()
+            # Перевод камеры к позиции, где должна располагаться микросхема
+            x = int(self.table_controller.limits_mm[0] / 2)
+            y = int(self.table_controller.limits_mm[1] / 3)
+            if self.test:
+                y = int(self.table_controller.limits_mm[1] / 2)
+            z = self.work_height
+            snap = self.coord_move([x, y, z], mode="discrete", crop=True)
+        #     self.table_controller.coord_mm[2]
+        frame_size_mm = [self.frame_width_mm, self.frame_height_mm]
+        count = [0, 0]
+
+        # HERE
+
+        self.btn_save_scan.setEnabled(True)
+        # QMessageBox.information(self, "Info Dialog", "Сканирование завершено", QMessageBox.Ok, QMessageBox.Ok)
+        self.unsaved = True
+        self.vidik.work = True
+
+        self.save_scan()
+        # 1. Ищем изделие - фотаем под камерой, составляем матрицу стола, разбив пространство на кадры
+        # Если кадр пуст, то идем несколько шагов вверх до непустого кадра
+        # Если не найдено изделие, то идем вниз от центра, потом ищем справа и слева
+        # 2. Как только найден первый кадр с изделием - идем вверх и фотаем до получения пустого кадра
+        # 3. Идем также вниз до получения пустого кадра, минуя уже сфотанные кадры
+        # 4. Передвигаемся направо от пустого кадра и идем в другую сторону (вверх) до того, как кадр не станет пустым
+        # Или пока не пройдем до пустого кадра соседней линии
+        # 5. Когда после очередного смещения вправо - все кадры при проходе пустые, то идем выполнять то же слева
 
     # Сохранение изображений в архивный файл
     def save_scan(self):

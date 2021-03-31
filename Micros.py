@@ -214,8 +214,8 @@ class SavedData(object):
     # Загрузка данных из XML
     def load_from_file_xml(self, xml_file):
         try:
-            with open(xml_file) as fobj:
-                xml = fobj.read()
+            with open(xml_file) as f_obj:
+                xml = f_obj.read()
             root = etree.fromstring(xml)
             for section in root.getchildren():
                 if section.tag == "RowCount":
@@ -711,66 +711,21 @@ class MainWindow(QMainWindow):
         self.services_menu_settings.triggered.connect(self.services_menu_settings_click)
         services_menu.addAction(self.services_menu_settings)
         menu_bar.addMenu(services_menu)
-        # self.viewMenuMainPanel = QAction("Основная &панель", self)
-        # self.viewMenuMainPanel.setShortcut("Ctrl+T")
-        # self.viewMenuMainPanel.setStatusTip("Отображать основную панель")
-        # self.viewMenuMainPanel.triggered.connect(self.viewMenuMainPanel_Click)
-        # self.viewMenuMainPanel.setCheckable(True)
-        # self.viewMenuMainPanel.setChecked(True)
-        # view_menu.addAction(self.viewMenuMainPanel)
 
         # Центральные элементы, включая изображение
         main_widget = QWidget(self)
         central_layout = QVBoxLayout()
         main_widget.setLayout(central_layout)
-        # self.im_label = ClickedLabel()
 
-        # img2 = cv2.imread("/home/krasnov/Pictures/схема_Уберподробно/beforeRotate/2_7.jpg",
-        # cv2.IMREAD_COLOR)[:, :, ::-1]
-        # height, width = img.shape[:2]
-        # start_row, strt_col = int(height * 0.00), int(width * 0.00)
-        # end_row, end_col = int(height * 1.00), int(width * 1.00)
-        # croped = img[start_row:end_row, strt_col:end_col].copy()
-
-        # img = cv2.imread("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_3_7.jpg"
-        # , cv2.IMREAD_COLOR)[:, :, ::-1]
-        # croped = img.copy()
-        # qImg = numpyQImage(croped)
-        # pixmap = QtGui.QPixmap.fromImage(qImg)
-        # self.imLabel.setPixmap(pixmap)
-
-        # pixmap = pixmap.scaled(self.imLabel.size(), Qt.KeepAspectRatio)
-        # imQ = QImage(img.data,img.cols,img.cols,QImage.Format_Grayscale16)
-        # pixmap = QPixmap("/home/krasnov/Pictures/P_20191028_093917.jpg")
-        # pixmap = QPixmap.fromImage(imQ)
-
-        # self.imLabel.setMaximumSize(1200, 800)
-        # self.imLabel.setFixedSize(1200, 800)
-        # self.imLabel.setAlignment(Qt.AlignCenter)
         self.im_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.im_label.setStyleSheet("border: 1px solid red")
-        # self.imLabel.mouseReleased.connect(self.imLabel_MouseReleased)
-        # self.imLabel.resized.connect(self.imLabel_Resize)
         self.im_label.installEventFilter(self)
-
-        # self.setWindowTitle(str(self.imLabel.size().width()) + "x" + str(self.imLabel.size().height()))
-        # self.setWindowTitle(str(random.randint(1,44)))
 
         central_layout.addWidget(self.im_label)
 
         minimap_layout = QGridLayout()
         self.im_label.setLayout(minimap_layout)
 
-        # imgMini = cv2.imread(
-        # "/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/mini.jpg",
-        # cv2.IMREAD_COLOR)[:, :, ::-1]
-        # cropedMini = imgMini.copy()
-        # qImgMini = numpyQImage(cropedMini)
-        # pixmapMini = QtGui.QPixmap.fromImage(qImgMini)
-        # pixmapMini = pixmapMini.scaled(self.minimapLabel.size(), Qt.KeepAspectRatio)
-
-        # self.minimapLabel.setPixmap(pixmapMini)
-        # self.minimapLabel.setFixedSize(pixmapMini.size())
         self.minimap_label.installEventFilter(self)
 
         minimap_layout.setRowStretch(0, 1)
@@ -837,18 +792,17 @@ class MainWindow(QMainWindow):
 
     def save_config(self):
         root = XmlET.Element("Root")
-        appt_rc = XmlET.Element("FullLoadImageMemoryLimit")
-        appt_rc.text = "1024*1024*1024"
-        root.append(appt_rc)
+        elem_full_load_img = XmlET.Element("FullLoadImageMemoryLimit")
+        elem_full_load_img.text = "1024*1024*1024"
+        root.append(elem_full_load_img)
         tree = XmlET.ElementTree(root)
-        # with open(self.configFilePath, "w") as fobj:
         with open(self.configFilePath, "w"):
             tree.write(self.configFilePath)
 
     def load_config(self):
         if os.path.exists(self.configFilePath):
-            with open(self.configFilePath) as fobj:
-                xml = fobj.read()
+            with open(self.configFilePath) as f_obj:
+                xml = f_obj.read()
                 root = etree.fromstring(xml)
                 for elem in root.getchildren():
                     if elem.tag == "FullLoadImageMemoryLimit":
@@ -962,7 +916,6 @@ class MainWindow(QMainWindow):
             if self.scan_window.vidik.isRunning():
                 self.scan_window.vidik.work = False
                 self.scan_window.vidik.terminate()
-                # print("vidik.terminate()")
             # self.scan_window.table_controller.thread_server.join()
 
             # if not self.scan_window.table_controller.thread_server.isRunning():
@@ -1139,51 +1092,9 @@ class MainWindow(QMainWindow):
                     return
             self.imageView.easy_merge(0, Rect(0, 0, self.savedData.colCount, self.savedData.rowCount))
             cv2.imwrite(image_file_name, self.imageView.sumImg)
-            self.imageView.sumImg
             self.set_new_view()
         else:
             return
-        # img_size = Size()
-        # img_size.width = 3000
-        # img_size.height = 4000
-        # con_area = Rect()
-        # con_area.x = 1050
-        # con_area.y = 1400
-        # con_area.width = 900
-        # con_area.height = 1200
-        #
-        # sum_img = np.arange(0)
-        # for i in range (5):
-        #     y1 = con_area.y
-        #     if i == 0:
-        #         y1 = 0
-        #     y2 = con_area.y + con_area.height
-        #     if i == 4:
-        #         y2 = img_size.height
-        #     row_img = np.arange(0)
-        #     for j in range (11):
-        #         x1 = con_area.x
-        #         if j == 0:
-        #             x1 = 0
-        #         x2 = con_area.x + con_area.width
-        #         if j == 10:
-        #             x2 = img_size.width
-        #         file_name = "/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/S_" + \
-        #                     str(i+1) + "_" + str(j+1) + ".jpg"
-        #         img = cv2.imread(file_name)
-        #         img2 = np.copy(img[y1:y2, x1:x2, :])
-        #         if row_img.size == 0:
-        #             row_img = np.copy(img2)
-        #         else:
-        #             row_img = np.concatenate((row_img, img2), axis=1)
-        #
-        #     if sum_img.size == 0:
-        #         sum_img = np.copy(row_img)
-        #     else:
-        #         sum_img = np.concatenate((sum_img, row_img), axis=0)
-        #
-        # cv2.imwrite("/home/krasnov/IRZProjects/python_micro/data/38fb1a73-5005-4eda-9fe7-7975fa31e11e/sum_img.jpg",
-        #             sum_img)
 
     def set_new_view(self):
         if not self.savedData or self.savedData.rowCount == 0:
