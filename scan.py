@@ -37,7 +37,7 @@ class ScanWindow(QMainWindow):
     # Инициализация
     def __init__(self, main_window):
         super().__init__()
-        self.test = False
+        self.test = True
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
@@ -175,6 +175,7 @@ class ScanWindow(QMainWindow):
         self.edt_border_y2 = QSpinBox()
         self.btn_border = QPushButton("Определить границы")
         self.btn_scan = QPushButton("Новая съемка")
+        self.btn_scan_without_borders = QPushButton("Съемка без границ")
         self.btn_save_scan = QPushButton("Сохранить съемку")
 
         self.clear_test_data()
@@ -299,6 +300,10 @@ class ScanWindow(QMainWindow):
         self.btn_border.clicked.connect(self.border_find)
         right_layout.addWidget(self.btn_scan)
         self.btn_scan.clicked.connect(self.scan)
+
+        right_layout.addWidget(self.btn_scan_without_borders)
+        self.btn_scan_without_borders.clicked.connect(self.scan_without_borders)
+
         right_layout.addWidget(self.btn_save_scan)
         self.btn_save_scan.clicked.connect(self.save_scan)
         self.btn_save_scan.setEnabled(False)
@@ -774,6 +779,7 @@ class ScanWindow(QMainWindow):
     @staticmethod
     # Комбинированный метод, следящий за тем, чтобы граница объекта при поиске находилась в середине изображения
     # (в направлении поперек обхода)
+    # Возвращает число линий, на которое смещена граница объекта от середины изображения
     def check_object_middle(img, direction, delta):
         index = abs(direction[1])
         non_white_limit = int(0.03 * img.shape[index])
@@ -781,7 +787,7 @@ class ScanWindow(QMainWindow):
         # По-моему это смещение мида на 1 пиксель - фигня. Ниже сделал перестраховку от выхода за пределы картинки
         if direction[index] > 0:
             middle -= 1
-        # Ищем хоть 1 пиксель объекта
+        # Ищем пиксели объекта по цвету
         coord = [0, 0]
         # for i in range(0, 6):
         for i in range(5, -6, -1):
@@ -929,9 +935,33 @@ class ScanWindow(QMainWindow):
 
         self.save_scan()
 
+    @staticmethod
+    # функция проверки, что на изображении - ничего нет
+    def snap_is_empty(img, delta):
+        # Проверяем горизонтальные и вертикальные линии на пустоту
+        coord = [0, 0]
+        for index in range(2):
+            non_white_limit = int(0.03 * img.shape[index])
+            middle = int(img.shape[1 - index] / 2)
+            for i in range(-5, 6):
+                coord[index] = middle + i * delta[index]
+                if i == 5:
+                    coord[index] -= 1
+                non_white_count = 0
+                for j in range(img.shape[index]):
+                    coord[1 - index] = j
+                    for k in range(3):
+                        if img[coord[1]][coord[0]][k] < 128:
+                            non_white_count += 1
+                            break
+                if non_white_count > non_white_limit:
+                    return False
+        return True
+
     # Сканирование без указания координат
     def scan_without_borders(self):
         self.vidik.work = False
+        files_img_count = 0
         if self.unsaved:
             dlg_result = QMessageBox.question(self,
                                               "Confirm Dialog",
@@ -951,28 +981,132 @@ class ScanWindow(QMainWindow):
             y = int(self.table_controller.limits_mm[1] / 3)
             if self.test:
                 y = int(self.table_controller.limits_mm[1] / 2)
+                # x = int(self.table_controller.limits_mm[0] / 3) - 50
             z = self.work_height
             snap = self.coord_move([x, y, z], mode="discrete", crop=True)
-        #     self.table_controller.coord_mm[2]
-        frame_size_mm = [self.frame_width_mm, self.frame_height_mm]
-        count = [0, 0]
+        else:
+            snap = self.coord_move(self.table_controller.coord_mm, mode="discrete", crop=True)
 
-        # HERE
-
-        self.btn_save_scan.setEnabled(True)
-        # QMessageBox.information(self, "Info Dialog", "Сканирование завершено", QMessageBox.Ok, QMessageBox.Ok)
-        self.unsaved = True
-        self.vidik.work = True
-
-        self.save_scan()
         # 1. Ищем изделие - фотаем под камерой, составляем матрицу стола, разбив пространство на кадры
+        delta = [self.delta_x, self.delta_y]
+        current_pos_index = list()
+        coordinates_x_mm = list()
+        x_mm = self.table_controller.coord_mm[0] % self.frame_width_mm
+        current_pos_index.append(int(self.table_controller.coord_mm[0] // self.frame_width_mm))
+        while x_mm < self.table_controller.limits_mm[0]:
+            coordinates_x_mm.append(x_mm)
+            x_mm += self.frame_width_mm
+
+        coordinates_y_mm = list()
+        y_mm = self.table_controller.coord_mm[1] % self.frame_height_mm
+        current_pos_index.append(int(self.table_controller.coord_mm[1] // self.frame_height_mm))
+        while y_mm < self.table_controller.limits_mm[1]:
+            coordinates_y_mm.append(y_mm)
+            y_mm += self.frame_height_mm
+        snap_matrix = list()
+        for i in range(len(coordinates_x_mm)):
+            new_x = list()
+            for j in range(len(coordinates_y_mm)):
+                new_x.append('')
+            snap_matrix.append(new_x)
+
         # Если кадр пуст, то идем несколько шагов вверх до непустого кадра
+        # Число кадров поиска от стартовой позиции
+        check_range = 3
+
+        img_empty = self.snap_is_empty(snap, delta)
         # Если не найдено изделие, то идем вниз от центра, потом ищем справа и слева
+        offset = [0, 0]
+        index = 1
+        if (current_pos_index[0] - check_range >= 0 and current_pos_index[1] - check_range >= 0
+            and current_pos_index[0] + check_range < len(coordinates_x_mm)
+                and current_pos_index[1] + check_range < len(coordinates_y_mm)):
+
+            while img_empty:
+                if offset[index] < check_range:
+                    offset[index] += 1
+                else:
+                    if offset[1 - index] == 0:
+                        offset[1 - index] -= check_range
+                    else:
+                        offset[index] -= check_range
+                        index = 1 - index
+                if index == 1 and offset[0] == 0 and offset[1] == 0:
+                    break
+                x = coordinates_x_mm[current_pos_index[0] + offset[0]]
+                y = coordinates_y_mm[current_pos_index[1] + offset[1]]
+                z = self.table_controller.coord_mm[2]
+                snap = self.coord_move([x, y, z], mode="discrete", crop=True)
+                if not self.snap_is_empty(snap, delta):
+                    img_empty = False
+
+        print("img_empty=" + str(img_empty))
+        print("offset=" + str(offset))
+        if img_empty:
+            QMessageBox.warning(self, "Внимание!", "Изделие не найдено!", QMessageBox.Ok, QMessageBox.Ok)
+            return
+        # Протестируй это!
+        current_pos_index += offset
+        if not os.path.exists(self.dir_for_img):
+            os.mkdir(self.dir_for_img)
+        for file in os.listdir(self.dir_for_img):
+            os.remove(os.path.join(self.dir_for_img, file))
+        file_name = os.path.join("SavedImg", "scan_{0}.jpg".format(files_img_count))
+        cv2.imwrite(file_name, snap)
+        snap_matrix[current_pos_index] = file_name
+        files_img_count += 1
+        # HERE
         # 2. Как только найден первый кадр с изделием - идем вверх и фотаем до получения пустого кадра
+        # direction_y определяет направление съемки вверх или вниз по y, direction_x - по x
+        direction_x = 1
+        direction_y = 1
         # 3. Идем также вниз до получения пустого кадра, минуя уже сфотанные кадры
         # 4. Передвигаемся направо от пустого кадра и идем в другую сторону (вверх) до того, как кадр не станет пустым
         # Или пока не пройдем до пустого кадра соседней линии
         # 5. Когда после очередного смещения вправо - все кадры при проходе пустые, то идем выполнять то же слева
+        return
+        # Создание файла описания XML
+        root = Xml.Element("Root")
+        elem_rc = Xml.Element("RowCount")
+        elem_rc.text = str(count[1])
+        root.append(elem_rc)
+        elem_cc = Xml.Element("ColCount")
+        elem_cc.text = str(count[0])
+        root.append(elem_cc)
+        elem_img = Xml.Element("Image")
+        root.append(elem_img)
+        img_format = Xml.SubElement(elem_img, "Format")
+        img_format.text = "jpg"
+        img_size = Xml.SubElement(elem_img, "ImgSize")
+        img_size_width = Xml.SubElement(img_size, "Width")
+        img_size_width.text = str(self.snap_width)
+        img_size_height = Xml.SubElement(img_size, "Height")
+        img_size_height.text = str(self.snap_height)
+        img_con_area = Xml.SubElement(elem_img, "ConnectionArea")
+        # HERE orientation param need
+        ica_x = Xml.SubElement(img_con_area, "X")
+        # ica_x.text = str(self.micros_controller.frame[0])
+        ica_x.text = str(self.program_settings.snap_settings.frame[0])
+        ica_y = Xml.SubElement(img_con_area, "Y")
+        # ica_y.text = str(self.micros_controller.frame[1])
+        ica_y.text = str(self.program_settings.snap_settings.frame[1])
+        ica_width = Xml.SubElement(img_con_area, "Width")
+        # ica_width.text = str(int(self.frame_width_mm * self.pixels_in_mm))
+        ica_width.text = str(self.program_settings.snap_settings.frame[2]
+                             - self.program_settings.snap_settings.frame[0])
+        ica_height = Xml.SubElement(img_con_area, "Height")
+        # ica_height.text = str(int(self.frame_height_mm * self.pixels_in_mm))
+        ica_height.text = str(self.program_settings.snap_settings.frame[3]
+                              - self.program_settings.snap_settings.frame[1])
+
+        tree = Xml.ElementTree(root)
+        with open(self.path_for_xml_file, "w"):
+            tree.write(self.path_for_xml_file)
+        self.btn_save_scan.setEnabled(True)
+        # QMessageBox.information(self, "Info Dialog", "Сканирование завершено", QMessageBox.Ok, QMessageBox.Ok)
+        self.unsaved = True
+        self.vidik.work = True
+        self.save_scan()
 
     # Сохранение изображений в архивный файл
     def save_scan(self):
