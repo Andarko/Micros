@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QWidget, QMainWindow, QSizePolicy, QFileDialog, QMes
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
 from PyQt5.QtWidgets import QAction, QInputDialog, QLineEdit, QLabel, QPushButton, QSpinBox, QFormLayout
 from PyQt5.QtWidgets import QAbstractSpinBox
-from PyQt5.QtCore import QEvent, Qt, QTimer, QThread, pyqtSignal
+from PyQt5.QtCore import QEvent, Qt, QTimer, QThread, pyqtSignal, QRect
 import numpy as np
 import cv2
 import datetime
@@ -937,7 +937,7 @@ class ScanWindow(QMainWindow):
 
     @staticmethod
     # функция проверки, что на изображении - ничего нет
-    def snap_is_empty(img, delta):
+    def img_is_empty(img, delta):
         # Проверяем горизонтальные и вертикальные линии на пустоту
         coord = [0, 0]
         for index in range(2):
@@ -1003,18 +1003,22 @@ class ScanWindow(QMainWindow):
         while y_mm < self.table_controller.limits_mm[1]:
             coordinates_y_mm.append(y_mm)
             y_mm += self.frame_height_mm
-        snap_matrix = list()
+        img_file_matrix = []
+        img_obj_matrix = []
         for i in range(len(coordinates_x_mm)):
-            new_x = list()
+            new_file_x = []
+            new_obj_x = []
             for j in range(len(coordinates_y_mm)):
-                new_x.append('')
-            snap_matrix.append(new_x)
+                new_file_x.append('')
+                new_obj_x.append(False)
+            img_file_matrix.append(new_file_x)
+            img_obj_matrix.append(new_obj_x)
 
         # Если кадр пуст, то идем несколько шагов вверх до непустого кадра
         # Число кадров поиска от стартовой позиции
         check_range = 3
 
-        img_empty = self.snap_is_empty(snap, delta)
+        img_empty = self.img_is_empty(snap, delta)
         # Если не найдено изделие, то идем вниз от центра, потом ищем справа и слева
         offset = [0, 0]
         index = 1
@@ -1037,7 +1041,7 @@ class ScanWindow(QMainWindow):
                 y = coordinates_y_mm[current_pos_index[1] + offset[1]]
                 z = self.table_controller.coord_mm[2]
                 snap = self.coord_move([x, y, z], mode="discrete", crop=True)
-                if not self.snap_is_empty(snap, delta):
+                if not self.img_is_empty(snap, delta):
                     img_empty = False
 
         print("img_empty=" + str(img_empty))
@@ -1046,24 +1050,67 @@ class ScanWindow(QMainWindow):
             QMessageBox.warning(self, "Внимание!", "Изделие не найдено!", QMessageBox.Ok, QMessageBox.Ok)
             return
         # Протестируй это!
-        current_pos_index += offset
+        current_pos_index[0] += offset[0]
+        current_pos_index[1] += offset[1]
         if not os.path.exists(self.dir_for_img):
             os.mkdir(self.dir_for_img)
         for file in os.listdir(self.dir_for_img):
             os.remove(os.path.join(self.dir_for_img, file))
         file_name = os.path.join("SavedImg", "scan_{0}.jpg".format(files_img_count))
         cv2.imwrite(file_name, snap)
-        snap_matrix[current_pos_index] = file_name
+        img_file_matrix[current_pos_index[0]][current_pos_index[1]] = file_name
+        img_obj_matrix[current_pos_index[0]][current_pos_index[1]] = True
         files_img_count += 1
-        # HERE
         # 2. Как только найден первый кадр с изделием - идем вверх и фотаем до получения пустого кадра
-        # direction_y определяет направление съемки вверх или вниз по y, direction_x - по x
-        direction_x = 1
-        direction_y = 1
-        # 3. Идем также вниз до получения пустого кадра, минуя уже сфотанные кадры
-        # 4. Передвигаемся направо от пустого кадра и идем в другую сторону (вверх) до того, как кадр не станет пустым
-        # Или пока не пройдем до пустого кадра соседней линии
-        # 5. Когда после очередного смещения вправо - все кадры при проходе пустые, то идем выполнять то же слева
+        # Введем еще предельные значения индексов съемки - все-таки мы снимаем прямоугольную область
+        # snap_area_rect = QRect(current_pos_index[0], current_pos_index[1], 1, 1)
+        snap_area_limits_x = [current_pos_index[0], current_pos_index[0]]
+        snap_area_limits_y = [current_pos_index[1], current_pos_index[1]]
+        # direction_y определяет направление съемки вверх или вниз по y, direction_x - по x:  -1 или 1
+        direction_y = -1
+        empty_column = False
+        # Цикл направлений по x
+        for direction_x in [-1, 1]:
+            dir_index_x = direction_x - (direction_x - 1) >> 1
+            # Цикл шагов по x
+            while (dir_index_x == 0 and current_pos_index[0] > 0) \
+                    or (dir_index_x == 1 and current_pos_index[0] < len(coordinates_x_mm) - 1):
+                empty_column = True
+                # Цикл направлений по y
+                for direction_y in [direction_y, -direction_y]:
+                    # Просто преобразую так -1 в 0, а 1 в 1, правда я извращенец?  ^_^
+                    dir_index_y = direction_y - ((direction_y - 1) >> 1)
+                    # current_pos_index[1] = snap_area_limits_y[dir_index_y]
+                    # Цикл шагов по y
+                    while (dir_index_y == 0 and current_pos_index[1] >= 0) \
+                            or (dir_index_y == 1 and current_pos_index[1] <= len(coordinates_y_mm) - 1):
+
+                        if not img_file_matrix[current_pos_index[0]][current_pos_index[1]]:
+                            snap = self.coord_move([coordinates_x_mm[current_pos_index[0]],
+                                                    coordinates_y_mm[current_pos_index[1]],
+                                                    self.table_controller.coord_mm[2]],
+                                                   mode="discrete", crop=True)
+                            file_name = os.path.join("SavedImg", "scan_{0}.jpg".format(files_img_count))
+                            cv2.imwrite(file_name, snap)
+                            img_file_matrix[current_pos_index[0]][current_pos_index[1]] = file_name
+                            files_img_count += 1
+                            img_is_empty = self.img_is_empty(snap, delta)
+                        else:
+                            img_is_empty = not img_obj_matrix[current_pos_index[0]][current_pos_index[1]]
+                        if img_is_empty:
+                            if snap_area_limits_y[dir_index_y] + direction_y == current_pos_index[1]:
+                                break
+                        else:
+                            snap_area_limits_y[dir_index_y] = current_pos_index[1]
+                            img_obj_matrix[current_pos_index[0]][current_pos_index[1]] = True
+                            empty_column = False
+
+                        current_pos_index[1] += direction_y
+                if empty_column:
+                    current_pos_index[0] -= direction_x
+                    break
+                current_pos_index[0] += direction_x
+
         return
         # Создание файла описания XML
         root = Xml.Element("Root")
