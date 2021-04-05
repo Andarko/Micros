@@ -379,7 +379,7 @@ class ScanWindow(QMainWindow):
 
     def snap(self, x1: int, y1: int, x2: int, y2: int, crop=False):
         if self.test:
-            time.sleep(0.3)
+            time.sleep(0.05)
             # return np.copy(self.test_img[y1:y2, x1:x2, :])
             # Переворачиваем координаты съемки
             y2_r = 6400 - y1
@@ -387,7 +387,7 @@ class ScanWindow(QMainWindow):
             return np.copy(self.test_img[y1_r:y2_r, x1:x2, :])
         else:
             # self.video_timer.stop()
-            time.sleep(0.1)
+            time.sleep(0.05)
             # for i in range(10):
             #     self.video_stream.read()
             # Прогревочные съемки
@@ -989,15 +989,15 @@ class ScanWindow(QMainWindow):
 
         # 1. Ищем изделие - фотаем под камерой, составляем матрицу стола, разбив пространство на кадры
         delta = [self.delta_x, self.delta_y]
-        current_pos_index = list()
-        coordinates_x_mm = list()
+        current_pos_index = []
+        coordinates_x_mm = []
         x_mm = self.table_controller.coord_mm[0] % self.frame_width_mm
         current_pos_index.append(int(self.table_controller.coord_mm[0] // self.frame_width_mm))
         while x_mm < self.table_controller.limits_mm[0]:
             coordinates_x_mm.append(x_mm)
             x_mm += self.frame_width_mm
 
-        coordinates_y_mm = list()
+        coordinates_y_mm = []
         y_mm = self.table_controller.coord_mm[1] % self.frame_height_mm
         current_pos_index.append(int(self.table_controller.coord_mm[1] // self.frame_height_mm))
         while y_mm < self.table_controller.limits_mm[1]:
@@ -1044,14 +1044,15 @@ class ScanWindow(QMainWindow):
                 if not self.img_is_empty(snap, delta):
                     img_empty = False
 
-        print("img_empty=" + str(img_empty))
-        print("offset=" + str(offset))
+        self.save_test_data("img_empty=" + str(img_empty))
+        self.save_test_data("offset=" + str(offset))
         if img_empty:
             QMessageBox.warning(self, "Внимание!", "Изделие не найдено!", QMessageBox.Ok, QMessageBox.Ok)
             return
         # Протестируй это!
         current_pos_index[0] += offset[0]
         current_pos_index[1] += offset[1]
+
         if not os.path.exists(self.dir_for_img):
             os.mkdir(self.dir_for_img)
         for file in os.listdir(self.dir_for_img):
@@ -1068,18 +1069,22 @@ class ScanWindow(QMainWindow):
         snap_area_limits_y = [current_pos_index[1], current_pos_index[1]]
         # direction_y определяет направление съемки вверх или вниз по y, direction_x - по x:  -1 или 1
         direction_y = -1
+        start_x_pos_index = current_pos_index[0]
         empty_column = False
         # Цикл направлений по x
         for direction_x in [-1, 1]:
-            dir_index_x = direction_x - (direction_x - 1) >> 1
+            self.save_test_data("direction_x={0}".format(direction_x))
+            dir_index_x = direction_x - int((direction_x - 1) / 2)
+            current_pos_index[0] = start_x_pos_index + dir_index_x
             # Цикл шагов по x
-            while (dir_index_x == 0 and current_pos_index[0] > 0) \
-                    or (dir_index_x == 1 and current_pos_index[0] < len(coordinates_x_mm) - 1):
+            while (dir_index_x == 0 and current_pos_index[0] >= 0) \
+                    or (dir_index_x == 1 and current_pos_index[0] <= len(coordinates_x_mm) - 1):
                 empty_column = True
                 # Цикл направлений по y
                 for direction_y in [direction_y, -direction_y]:
-                    # Просто преобразую так -1 в 0, а 1 в 1, правда я извращенец?  ^_^
-                    dir_index_y = direction_y - ((direction_y - 1) >> 1)
+                    # Просто преобразую так -1 в 0, а 1 в 1
+                    self.save_test_data("direction_y={0}".format(direction_y))
+                    dir_index_y = direction_y - int((direction_y - 1) / 2)
                     # current_pos_index[1] = snap_area_limits_y[dir_index_y]
                     # Цикл шагов по y
                     while (dir_index_y == 0 and current_pos_index[1] >= 0) \
@@ -1095,30 +1100,107 @@ class ScanWindow(QMainWindow):
                             img_file_matrix[current_pos_index[0]][current_pos_index[1]] = file_name
                             files_img_count += 1
                             img_is_empty = self.img_is_empty(snap, delta)
+                            self.save_test_data("snap: x={0}, y={1}. empty={2}"
+                                                .format(current_pos_index[0], current_pos_index[1], img_is_empty))
                         else:
                             img_is_empty = not img_obj_matrix[current_pos_index[0]][current_pos_index[1]]
+                            self.save_test_data("move: x={0}, y={1}. empty={2}"
+                                                .format(current_pos_index[0], current_pos_index[1], img_is_empty))
                         if img_is_empty:
                             if snap_area_limits_y[dir_index_y] + direction_y == current_pos_index[1]:
                                 break
                         else:
-                            snap_area_limits_y[dir_index_y] = current_pos_index[1]
+                            if current_pos_index[1] * direction_y > snap_area_limits_y[dir_index_y] * direction_y:
+                                snap_area_limits_y[dir_index_y] = current_pos_index[1]
+                                self.save_test_data("limit Y[{0}]={1}".format(dir_index_y, snap_area_limits_y[dir_index_y]))
                             img_obj_matrix[current_pos_index[0]][current_pos_index[1]] = True
                             empty_column = False
 
                         current_pos_index[1] += direction_y
                 if empty_column:
-                    current_pos_index[0] -= direction_x
+                    # current_pos_index[0] -= direction_x
                     break
+                else:
+                    if current_pos_index[0] * direction_x > snap_area_limits_x[dir_index_x] * direction_x:
+                        snap_area_limits_x[dir_index_x] = current_pos_index[0]
+                        self.save_test_data("limit X[{0}]={1}".format(dir_index_x, snap_area_limits_x[dir_index_x]))
                 current_pos_index[0] += direction_x
+        # Тут блок "добивания" картинок, которые не засняли в предыдущем блоке из-за недооценки габаритов
+        while True:
+            count_missed = 0
+            closest_cell = [0, 0]
+            closest_dist = 1000000
+            for i in range(snap_area_limits_x[0], snap_area_limits_x[1] + 1):
+                for j in range(snap_area_limits_y[0], snap_area_limits_y[1] + 1):
+                    if not img_file_matrix[i][j]:
+                        count_missed += 1
+                        dist = (abs(i - current_pos_index[0]) * self.frame_width_mm
+                                + abs(j - current_pos_index[1]) * self.frame_height_mm)
+                        if dist < closest_dist:
+                            closest_dist = dist
+                            closest_cell = [i, j]
 
-        return
+            if count_missed == 0:
+                break
+            else:
+                delta_x = 0
+                delta_y = 0
+                if closest_cell[1] > snap_area_limits_y[0] \
+                        and not img_file_matrix[closest_cell[0]][closest_cell[1] - 1]:
+                    delta_y = -1
+                elif closest_cell[1] < snap_area_limits_y[1] \
+                        and not img_file_matrix[closest_cell[0]][closest_cell[1] + 1]:
+                    delta_y = +1
+                elif closest_cell[0] > snap_area_limits_x[0] \
+                        and not img_file_matrix[closest_cell[0] - 1][closest_cell[1]]:
+                    delta_x = -1
+                elif closest_cell[0] < snap_area_limits_x[1] \
+                        and not img_file_matrix[closest_cell[0] + 1][closest_cell[1]]:
+                    delta_x = +1
+
+                while True:
+                    current_pos_index[0] = closest_cell[0]
+                    current_pos_index[1] = closest_cell[1]
+                    snap = self.coord_move([coordinates_x_mm[current_pos_index[0]],
+                                            coordinates_y_mm[current_pos_index[1]],
+                                            self.table_controller.coord_mm[2]],
+                                           mode="discrete", crop=True)
+                    file_name = os.path.join("SavedImg", "scan_{0}.jpg".format(files_img_count))
+                    cv2.imwrite(file_name, snap)
+                    img_file_matrix[current_pos_index[0]][current_pos_index[1]] = file_name
+                    files_img_count += 1
+                    img_is_empty = self.img_is_empty(snap, delta)
+                    self.save_test_data("snap+: x={0}, y={1}. empty={2}"
+                                        .format(current_pos_index[0], current_pos_index[1], img_is_empty))
+                    closest_cell[0] += delta_x
+                    closest_cell[1] += delta_y
+                    if closest_cell[0] < snap_area_limits_x[0] or closest_cell[0] > snap_area_limits_x[1] \
+                            or closest_cell[1] < snap_area_limits_y[0] or closest_cell[1] > snap_area_limits_y[1]:
+                        break
+                    if img_file_matrix[closest_cell[0]][closest_cell[1]]:
+                        break
+
+        # Теперь надо переименовать нужные файлы и удалить все лишние
+        for i in range(snap_area_limits_x[0], snap_area_limits_x[1] + 1):
+            for j in range(snap_area_limits_y[0], snap_area_limits_y[1] + 1):
+                os.rename(img_file_matrix[i][j], os.path.join(self.dir_for_img,
+                                                              "S_{0}_{1}.jpg".format(j - snap_area_limits_y[0] + 1,
+                                                                                     i - snap_area_limits_x[0] + 1)))
+
+        if not os.path.exists(self.dir_for_img):
+            os.mkdir(self.dir_for_img)
+        for file in os.listdir(self.dir_for_img):
+            if file.find('scan') == 0:
+                os.remove(os.path.join(self.dir_for_img, file))
+            # cv2.imwrite(os.path.join(self.dir_for_img, "S_{0}_{1}.jpg".format(j_r + 1, i + 1)), snap[:, :, :])
+            # print('x = ' + str(x) + '; y = ' + str(y))
         # Создание файла описания XML
         root = Xml.Element("Root")
         elem_rc = Xml.Element("RowCount")
-        elem_rc.text = str(count[1])
+        elem_rc.text = str(snap_area_limits_y[1] - snap_area_limits_y[0] + 1)
         root.append(elem_rc)
         elem_cc = Xml.Element("ColCount")
-        elem_cc.text = str(count[0])
+        elem_cc.text = str(snap_area_limits_x[1] - snap_area_limits_x[0] + 1)
         root.append(elem_cc)
         elem_img = Xml.Element("Image")
         root.append(elem_img)
