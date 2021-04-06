@@ -1,402 +1,73 @@
-05.04.2021 16:34:04<=img_empty=False
-05.04.2021 16:34:04<=offset=[0, 0]
-05.04.2021 16:34:04<=direction_x=-1
-05.04.2021 16:34:04<=direction_y=-1
-05.04.2021 16:34:04<=move: x=8, y=32. empty=False
-05.04.2021 16:34:04<=snap: x=8, y=31. empty=False
-05.04.2021 16:34:04<=limit Y[0]=31
-05.04.2021 16:34:04<=snap: x=8, y=30. empty=False
-05.04.2021 16:34:04<=limit Y[0]=30
-05.04.2021 16:34:04<=snap: x=8, y=29. empty=False
-05.04.2021 16:34:04<=limit Y[0]=29
-05.04.2021 16:34:04<=snap: x=8, y=28. empty=False
-05.04.2021 16:34:04<=limit Y[0]=28
-05.04.2021 16:34:04<=snap: x=8, y=27. empty=False
-05.04.2021 16:34:04<=limit Y[0]=27
-05.04.2021 16:34:04<=snap: x=8, y=26. empty=False
-05.04.2021 16:34:04<=limit Y[0]=26
-05.04.2021 16:34:04<=snap: x=8, y=25. empty=False
-05.04.2021 16:34:04<=limit Y[0]=25
-05.04.2021 16:34:04<=snap: x=8, y=24. empty=False
-05.04.2021 16:34:04<=limit Y[0]=24
-05.04.2021 16:34:04<=snap: x=8, y=23. empty=False
-05.04.2021 16:34:04<=limit Y[0]=23
-05.04.2021 16:34:05<=snap: x=8, y=22. empty=True
-05.04.2021 16:34:05<=direction_y=1
-05.04.2021 16:34:05<=move: x=8, y=22. empty=True
-05.04.2021 16:34:05<=move: x=8, y=23. empty=False
-05.04.2021 16:34:05<=move: x=8, y=24. empty=False
-05.04.2021 16:34:05<=move: x=8, y=25. empty=False
-05.04.2021 16:34:05<=move: x=8, y=26. empty=False
-05.04.2021 16:34:05<=move: x=8, y=27. empty=False
-05.04.2021 16:34:05<=move: x=8, y=28. empty=False
-05.04.2021 16:34:05<=move: x=8, y=29. empty=False
-05.04.2021 16:34:05<=move: x=8, y=30. empty=False
-05.04.2021 16:34:05<=move: x=8, y=31. empty=False
-05.04.2021 16:34:05<=move: x=8, y=32. empty=False
-05.04.2021 16:34:05<=snap: x=8, y=33. empty=False
-05.04.2021 16:34:05<=limit Y[1]=33
-05.04.2021 16:34:05<=snap: x=8, y=34. empty=False
-05.04.2021 16:34:05<=limit Y[1]=34
-05.04.2021 16:34:05<=snap: x=8, y=35. empty=False
-05.04.2021 16:34:05<=limit Y[1]=35
-05.04.2021 16:34:05<=snap: x=8, y=36. empty=False
-05.04.2021 16:34:05<=limit Y[1]=36
-05.04.2021 16:34:05<=snap: x=8, y=37. empty=False
-05.04.2021 16:34:05<=limit Y[1]=37
-05.04.2021 16:34:05<=snap: x=8, y=38. empty=True
-05.04.2021 16:34:05<=direction_y=1
-05.04.2021 16:34:05<=snap: x=7, y=38. empty=True
-05.04.2021 16:34:05<=direction_y=-1
-05.04.2021 16:34:05<=move: x=7, y=38. empty=True
-05.04.2021 16:34:05<=snap: x=7, y=37. empty=False
-05.04.2021 16:34:05<=snap: x=7, y=36. empty=False
-05.04.2021 16:34:05<=snap: x=7, y=35. empty=False
-05.04.2021 16:34:05<=snap: x=7, y=34. empty=False
-05.04.2021 16:34:05<=snap: x=7, y=33. empty=False
-05.04.2021 16:34:05<=snap: x=7, y=32. empty=False
-05.04.2021 16:34:05<=snap: x=7, y=31. empty=False
-05.04.2021 16:34:05<=snap: x=7, y=30. empty=False
-05.04.2021 16:34:05<=snap: x=7, y=29. empty=False
-05.04.2021 16:34:06<=snap: x=7, y=28. empty=False
-05.04.2021 16:34:06<=snap: x=7, y=27. empty=False
-05.04.2021 16:34:06<=snap: x=7, y=26. empty=False
-05.04.2021 16:34:06<=snap: x=7, y=25. empty=False
-05.04.2021 16:34:06<=snap: x=7, y=24. empty=False
-05.04.2021 16:34:06<=snap: x=7, y=23. empty=False
-05.04.2021 16:34:06<=snap: x=7, y=22. empty=True
-05.04.2021 16:34:06<=limit X[0]=7
-05.04.2021 16:34:06<=direction_y=-1
-05.04.2021 16:34:06<=snap: x=6, y=22. empty=True
-05.04.2021 16:34:06<=direction_y=1
-05.04.2021 16:34:06<=move: x=6, y=22. empty=True
-05.04.2021 16:34:06<=snap: x=6, y=23. empty=False
-05.04.2021 16:34:06<=snap: x=6, y=24. empty=False
-05.04.2021 16:34:06<=snap: x=6, y=25. empty=False
-05.04.2021 16:34:06<=snap: x=6, y=26. empty=False
-05.04.2021 16:34:06<=snap: x=6, y=27. empty=False
-05.04.2021 16:34:06<=snap: x=6, y=28. empty=False
-05.04.2021 16:34:07<=snap: x=6, y=29. empty=False
-05.04.2021 16:34:07<=snap: x=6, y=30. empty=False
-05.04.2021 16:34:07<=snap: x=6, y=31. empty=False
-05.04.2021 16:34:07<=snap: x=6, y=32. empty=False
-05.04.2021 16:34:07<=snap: x=6, y=33. empty=False
-05.04.2021 16:34:07<=snap: x=6, y=34. empty=False
-05.04.2021 16:34:07<=snap: x=6, y=35. empty=False
-05.04.2021 16:34:07<=snap: x=6, y=36. empty=False
-05.04.2021 16:34:07<=snap: x=6, y=37. empty=False
-05.04.2021 16:34:07<=snap: x=6, y=38. empty=True
-05.04.2021 16:34:07<=limit X[0]=6
-05.04.2021 16:34:07<=direction_y=1
-05.04.2021 16:34:07<=snap: x=5, y=38. empty=True
-05.04.2021 16:34:07<=direction_y=-1
-05.04.2021 16:34:07<=move: x=5, y=38. empty=True
-05.04.2021 16:34:07<=snap: x=5, y=37. empty=True
-05.04.2021 16:34:07<=snap: x=5, y=36. empty=True
-05.04.2021 16:34:08<=snap: x=5, y=35. empty=True
-05.04.2021 16:34:08<=snap: x=5, y=34. empty=True
-05.04.2021 16:34:08<=snap: x=5, y=33. empty=True
-05.04.2021 16:34:08<=snap: x=5, y=32. empty=True
-05.04.2021 16:34:08<=snap: x=5, y=31. empty=True
-05.04.2021 16:34:08<=snap: x=5, y=30. empty=True
-05.04.2021 16:34:08<=snap: x=5, y=29. empty=True
-05.04.2021 16:34:08<=snap: x=5, y=28. empty=True
-05.04.2021 16:34:09<=snap: x=5, y=27. empty=True
-05.04.2021 16:34:09<=snap: x=5, y=26. empty=True
-05.04.2021 16:34:09<=snap: x=5, y=25. empty=True
-05.04.2021 16:34:09<=snap: x=5, y=24. empty=True
-05.04.2021 16:34:09<=snap: x=5, y=23. empty=True
-05.04.2021 16:34:09<=snap: x=5, y=22. empty=True
-05.04.2021 16:34:09<=direction_x=1
-05.04.2021 16:34:09<=direction_y=-1
-05.04.2021 16:34:09<=snap: x=9, y=22. empty=True
-05.04.2021 16:34:09<=direction_y=1
-05.04.2021 16:34:09<=move: x=9, y=22. empty=True
-05.04.2021 16:34:09<=snap: x=9, y=23. empty=False
-05.04.2021 16:34:09<=snap: x=9, y=24. empty=False
-05.04.2021 16:34:09<=snap: x=9, y=25. empty=False
-05.04.2021 16:34:09<=snap: x=9, y=26. empty=False
-05.04.2021 16:34:09<=snap: x=9, y=27. empty=False
-05.04.2021 16:34:09<=snap: x=9, y=28. empty=False
-05.04.2021 16:34:09<=snap: x=9, y=29. empty=False
-05.04.2021 16:34:10<=snap: x=9, y=30. empty=False
-05.04.2021 16:34:10<=snap: x=9, y=31. empty=False
-05.04.2021 16:34:10<=snap: x=9, y=32. empty=False
-05.04.2021 16:34:10<=snap: x=9, y=33. empty=False
-05.04.2021 16:34:10<=snap: x=9, y=34. empty=False
-05.04.2021 16:34:10<=snap: x=9, y=35. empty=False
-05.04.2021 16:34:10<=snap: x=9, y=36. empty=False
-05.04.2021 16:34:10<=snap: x=9, y=37. empty=False
-05.04.2021 16:34:10<=snap: x=9, y=38. empty=True
-05.04.2021 16:34:10<=limit X[1]=9
-05.04.2021 16:34:10<=direction_y=1
-05.04.2021 16:34:10<=snap: x=10, y=38. empty=True
-05.04.2021 16:34:10<=direction_y=-1
-05.04.2021 16:34:10<=move: x=10, y=38. empty=True
-05.04.2021 16:34:10<=snap: x=10, y=37. empty=False
-05.04.2021 16:34:10<=snap: x=10, y=36. empty=False
-05.04.2021 16:34:10<=snap: x=10, y=35. empty=False
-05.04.2021 16:34:10<=snap: x=10, y=34. empty=False
-05.04.2021 16:34:10<=snap: x=10, y=33. empty=False
-05.04.2021 16:34:10<=snap: x=10, y=32. empty=False
-05.04.2021 16:34:11<=snap: x=10, y=31. empty=False
-05.04.2021 16:34:11<=snap: x=10, y=30. empty=False
-05.04.2021 16:34:11<=snap: x=10, y=29. empty=False
-05.04.2021 16:34:11<=snap: x=10, y=28. empty=False
-05.04.2021 16:34:11<=snap: x=10, y=27. empty=False
-05.04.2021 16:34:11<=snap: x=10, y=26. empty=False
-05.04.2021 16:34:11<=snap: x=10, y=25. empty=False
-05.04.2021 16:34:11<=snap: x=10, y=24. empty=False
-05.04.2021 16:34:11<=snap: x=10, y=23. empty=False
-05.04.2021 16:34:11<=snap: x=10, y=22. empty=True
-05.04.2021 16:34:11<=limit X[1]=10
-05.04.2021 16:34:11<=direction_y=-1
-05.04.2021 16:34:11<=snap: x=11, y=22. empty=True
-05.04.2021 16:34:11<=direction_y=1
-05.04.2021 16:34:11<=move: x=11, y=22. empty=True
-05.04.2021 16:34:11<=snap: x=11, y=23. empty=False
-05.04.2021 16:34:11<=snap: x=11, y=24. empty=False
-05.04.2021 16:34:11<=snap: x=11, y=25. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=26. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=27. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=28. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=29. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=30. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=31. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=32. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=33. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=34. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=35. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=36. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=37. empty=False
-05.04.2021 16:34:12<=snap: x=11, y=38. empty=True
-05.04.2021 16:34:12<=limit X[1]=11
-05.04.2021 16:34:12<=direction_y=1
-05.04.2021 16:34:12<=snap: x=12, y=38. empty=False
-05.04.2021 16:34:12<=limit Y[1]=38
-05.04.2021 16:34:12<=snap: x=12, y=39. empty=False
-05.04.2021 16:34:12<=limit Y[1]=39
-05.04.2021 16:34:12<=snap: x=12, y=40. empty=False
-05.04.2021 16:34:12<=limit Y[1]=40
-05.04.2021 16:34:13<=snap: x=12, y=41. empty=False
-05.04.2021 16:34:13<=limit Y[1]=41
-05.04.2021 16:34:13<=snap: x=12, y=42. empty=True
-05.04.2021 16:34:13<=direction_y=-1
-05.04.2021 16:34:13<=move: x=12, y=42. empty=True
-05.04.2021 16:34:13<=move: x=12, y=41. empty=False
-05.04.2021 16:34:13<=move: x=12, y=40. empty=False
-05.04.2021 16:34:13<=move: x=12, y=39. empty=False
-05.04.2021 16:34:13<=move: x=12, y=38. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=37. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=36. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=35. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=34. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=33. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=32. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=31. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=30. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=29. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=28. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=27. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=26. empty=False
-05.04.2021 16:34:13<=snap: x=12, y=25. empty=False
-05.04.2021 16:34:14<=snap: x=12, y=24. empty=False
-05.04.2021 16:34:14<=snap: x=12, y=23. empty=False
-05.04.2021 16:34:14<=snap: x=12, y=22. empty=False
-05.04.2021 16:34:14<=limit Y[0]=22
-05.04.2021 16:34:14<=snap: x=12, y=21. empty=False
-05.04.2021 16:34:14<=limit Y[0]=21
-05.04.2021 16:34:14<=snap: x=12, y=20. empty=False
-05.04.2021 16:34:14<=limit Y[0]=20
-05.04.2021 16:34:14<=snap: x=12, y=19. empty=False
-05.04.2021 16:34:14<=limit Y[0]=19
-05.04.2021 16:34:14<=snap: x=12, y=18. empty=False
-05.04.2021 16:34:14<=limit Y[0]=18
-05.04.2021 16:34:14<=snap: x=12, y=17. empty=False
-05.04.2021 16:34:14<=limit Y[0]=17
-05.04.2021 16:34:14<=snap: x=12, y=16. empty=False
-05.04.2021 16:34:14<=limit Y[0]=16
-05.04.2021 16:34:14<=snap: x=12, y=15. empty=True
-05.04.2021 16:34:14<=limit X[1]=12
-05.04.2021 16:34:14<=direction_y=-1
-05.04.2021 16:34:14<=snap: x=13, y=15. empty=True
-05.04.2021 16:34:14<=direction_y=1
-05.04.2021 16:34:14<=move: x=13, y=15. empty=True
-05.04.2021 16:34:14<=snap: x=13, y=16. empty=False
-05.04.2021 16:34:14<=snap: x=13, y=17. empty=False
-05.04.2021 16:34:14<=snap: x=13, y=18. empty=False
-05.04.2021 16:34:14<=snap: x=13, y=19. empty=False
-05.04.2021 16:34:14<=snap: x=13, y=20. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=21. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=22. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=23. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=24. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=25. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=26. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=27. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=28. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=29. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=30. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=31. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=32. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=33. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=34. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=35. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=36. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=37. empty=False
-05.04.2021 16:34:15<=snap: x=13, y=38. empty=False
-05.04.2021 16:34:16<=snap: x=13, y=39. empty=False
-05.04.2021 16:34:16<=snap: x=13, y=40. empty=False
-05.04.2021 16:34:16<=snap: x=13, y=41. empty=False
-05.04.2021 16:34:16<=snap: x=13, y=42. empty=True
-05.04.2021 16:34:16<=limit X[1]=13
-05.04.2021 16:34:16<=direction_y=1
-05.04.2021 16:34:16<=snap: x=14, y=42. empty=True
-05.04.2021 16:34:16<=direction_y=-1
-05.04.2021 16:34:16<=move: x=14, y=42. empty=True
-05.04.2021 16:34:16<=snap: x=14, y=41. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=40. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=39. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=38. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=37. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=36. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=35. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=34. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=33. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=32. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=31. empty=False
-05.04.2021 16:34:16<=snap: x=14, y=30. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=29. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=28. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=27. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=26. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=25. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=24. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=23. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=22. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=21. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=20. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=19. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=18. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=17. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=16. empty=False
-05.04.2021 16:34:17<=snap: x=14, y=15. empty=True
-05.04.2021 16:34:17<=limit X[1]=14
-05.04.2021 16:34:17<=direction_y=-1
-05.04.2021 16:34:17<=snap: x=15, y=15. empty=True
-05.04.2021 16:34:17<=direction_y=1
-05.04.2021 16:34:17<=move: x=15, y=15. empty=True
-05.04.2021 16:34:18<=snap: x=15, y=16. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=17. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=18. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=19. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=20. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=21. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=22. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=23. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=24. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=25. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=26. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=27. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=28. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=29. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=30. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=31. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=32. empty=False
-05.04.2021 16:34:18<=snap: x=15, y=33. empty=False
-05.04.2021 16:34:19<=snap: x=15, y=34. empty=False
-05.04.2021 16:34:19<=snap: x=15, y=35. empty=False
-05.04.2021 16:34:19<=snap: x=15, y=36. empty=False
-05.04.2021 16:34:19<=snap: x=15, y=37. empty=False
-05.04.2021 16:34:19<=snap: x=15, y=38. empty=False
-05.04.2021 16:34:19<=snap: x=15, y=39. empty=False
-05.04.2021 16:34:19<=snap: x=15, y=40. empty=False
-05.04.2021 16:34:19<=snap: x=15, y=41. empty=False
-05.04.2021 16:34:19<=snap: x=15, y=42. empty=True
-05.04.2021 16:34:19<=limit X[1]=15
-05.04.2021 16:34:19<=direction_y=1
-05.04.2021 16:34:19<=snap: x=16, y=42. empty=True
-05.04.2021 16:34:19<=direction_y=-1
-05.04.2021 16:34:19<=move: x=16, y=42. empty=True
-05.04.2021 16:34:19<=snap: x=16, y=41. empty=True
-05.04.2021 16:34:19<=snap: x=16, y=40. empty=True
-05.04.2021 16:34:19<=snap: x=16, y=39. empty=True
-05.04.2021 16:34:20<=snap: x=16, y=38. empty=True
-05.04.2021 16:34:20<=snap: x=16, y=37. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=36. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=35. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=34. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=33. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=32. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=31. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=30. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=29. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=28. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=27. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=26. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=25. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=24. empty=False
-05.04.2021 16:34:20<=snap: x=16, y=23. empty=True
-05.04.2021 16:34:21<=snap: x=16, y=22. empty=True
-05.04.2021 16:34:21<=snap: x=16, y=21. empty=True
-05.04.2021 16:34:21<=snap: x=16, y=20. empty=True
-05.04.2021 16:34:21<=snap: x=16, y=19. empty=True
-05.04.2021 16:34:21<=snap: x=16, y=18. empty=True
-05.04.2021 16:34:21<=snap: x=16, y=17. empty=True
-05.04.2021 16:34:21<=snap: x=16, y=16. empty=True
-05.04.2021 16:34:21<=snap: x=16, y=15. empty=True
-05.04.2021 16:34:21<=limit X[1]=16
-05.04.2021 16:34:21<=snap+: x=11, y=16. empty=True
-05.04.2021 16:34:21<=snap+: x=11, y=17. empty=True
-05.04.2021 16:34:21<=snap+: x=11, y=18. empty=True
-05.04.2021 16:34:21<=snap+: x=11, y=19. empty=True
-05.04.2021 16:34:22<=snap+: x=11, y=20. empty=True
-05.04.2021 16:34:22<=snap+: x=11, y=21. empty=True
-05.04.2021 16:34:22<=snap+: x=10, y=21. empty=True
-05.04.2021 16:34:22<=snap+: x=10, y=20. empty=True
-05.04.2021 16:34:22<=snap+: x=10, y=19. empty=True
-05.04.2021 16:34:22<=snap+: x=10, y=18. empty=True
-05.04.2021 16:34:22<=snap+: x=10, y=17. empty=True
-05.04.2021 16:34:22<=snap+: x=10, y=16. empty=True
-05.04.2021 16:34:22<=snap+: x=9, y=16. empty=True
-05.04.2021 16:34:22<=snap+: x=9, y=17. empty=True
-05.04.2021 16:34:22<=snap+: x=9, y=18. empty=True
-05.04.2021 16:34:22<=snap+: x=9, y=19. empty=True
-05.04.2021 16:34:23<=snap+: x=9, y=20. empty=True
-05.04.2021 16:34:23<=snap+: x=9, y=21. empty=True
-05.04.2021 16:34:23<=snap+: x=8, y=21. empty=True
-05.04.2021 16:34:23<=snap+: x=8, y=20. empty=True
-05.04.2021 16:34:23<=snap+: x=8, y=19. empty=True
-05.04.2021 16:34:23<=snap+: x=8, y=18. empty=True
-05.04.2021 16:34:23<=snap+: x=8, y=17. empty=True
-05.04.2021 16:34:23<=snap+: x=8, y=16. empty=True
-05.04.2021 16:34:23<=snap+: x=7, y=16. empty=True
-05.04.2021 16:34:23<=snap+: x=7, y=17. empty=True
-05.04.2021 16:34:23<=snap+: x=7, y=18. empty=True
-05.04.2021 16:34:24<=snap+: x=7, y=19. empty=True
-05.04.2021 16:34:24<=snap+: x=7, y=20. empty=True
-05.04.2021 16:34:24<=snap+: x=7, y=21. empty=True
-05.04.2021 16:34:24<=snap+: x=6, y=21. empty=True
-05.04.2021 16:34:24<=snap+: x=6, y=20. empty=True
-05.04.2021 16:34:24<=snap+: x=6, y=19. empty=True
-05.04.2021 16:34:24<=snap+: x=6, y=18. empty=True
-05.04.2021 16:34:24<=snap+: x=6, y=17. empty=True
-05.04.2021 16:34:24<=snap+: x=6, y=16. empty=True
-05.04.2021 16:34:24<=snap+: x=6, y=39. empty=True
-05.04.2021 16:34:24<=snap+: x=6, y=40. empty=True
-05.04.2021 16:34:25<=snap+: x=6, y=41. empty=True
-05.04.2021 16:34:25<=snap+: x=7, y=41. empty=True
-05.04.2021 16:34:25<=snap+: x=7, y=40. empty=True
-05.04.2021 16:34:25<=snap+: x=7, y=39. empty=True
-05.04.2021 16:34:25<=snap+: x=8, y=39. empty=True
-05.04.2021 16:34:25<=snap+: x=8, y=40. empty=True
-05.04.2021 16:34:25<=snap+: x=8, y=41. empty=True
-05.04.2021 16:34:25<=snap+: x=9, y=41. empty=True
-05.04.2021 16:34:25<=snap+: x=9, y=40. empty=True
-05.04.2021 16:34:25<=snap+: x=9, y=39. empty=True
-05.04.2021 16:34:25<=snap+: x=10, y=39. empty=True
-05.04.2021 16:34:25<=snap+: x=10, y=40. empty=True
-05.04.2021 16:34:26<=snap+: x=10, y=41. empty=True
-05.04.2021 16:34:26<=snap+: x=11, y=41. empty=True
-05.04.2021 16:34:26<=snap+: x=11, y=40. empty=True
-05.04.2021 16:34:26<=snap+: x=11, y=39. empty=True
+06.04.2021 09:53:32<=img_empty=False
+06.04.2021 09:53:32<=offset=[0, 0]
+06.04.2021 09:53:32<=direction_x=-1
+06.04.2021 09:53:32<=direction_y=-1
+06.04.2021 09:53:32<=move: x=6, y=12. empty=False
+06.04.2021 09:53:34<=snap: x=6, y=11. empty=False
+06.04.2021 09:53:34<=limit Y[0]=11
+06.04.2021 09:53:35<=snap: x=6, y=10. empty=True
+06.04.2021 09:53:35<=direction_y=1
+06.04.2021 09:53:35<=move: x=6, y=10. empty=True
+06.04.2021 09:53:35<=move: x=6, y=11. empty=False
+06.04.2021 09:53:35<=move: x=6, y=12. empty=False
+06.04.2021 09:53:39<=snap: x=6, y=13. empty=False
+06.04.2021 09:53:39<=limit Y[1]=13
+06.04.2021 09:53:40<=snap: x=6, y=14. empty=False
+06.04.2021 09:53:40<=limit Y[1]=14
+06.04.2021 09:53:41<=snap: x=6, y=15. empty=False
+06.04.2021 09:53:41<=limit Y[1]=15
+06.04.2021 09:53:43<=snap: x=6, y=16. empty=True
+06.04.2021 09:53:43<=direction_y=1
+06.04.2021 09:53:45<=snap: x=5, y=16. empty=True
+06.04.2021 09:53:45<=direction_y=-1
+06.04.2021 09:53:45<=move: x=5, y=16. empty=True
+06.04.2021 09:53:46<=snap: x=5, y=15. empty=False
+06.04.2021 09:53:48<=snap: x=5, y=14. empty=False
+06.04.2021 09:53:49<=snap: x=5, y=13. empty=False
+06.04.2021 09:53:51<=snap: x=5, y=12. empty=False
+06.04.2021 09:53:52<=snap: x=5, y=11. empty=False
+06.04.2021 09:53:54<=snap: x=5, y=10. empty=True
+06.04.2021 09:53:54<=limit X[0]=5
+06.04.2021 09:53:54<=direction_y=-1
+06.04.2021 09:53:56<=snap: x=4, y=10. empty=True
+06.04.2021 09:53:56<=direction_y=1
+06.04.2021 09:53:56<=move: x=4, y=10. empty=True
+06.04.2021 09:53:57<=snap: x=4, y=11. empty=True
+06.04.2021 09:53:59<=snap: x=4, y=12. empty=True
+06.04.2021 09:54:00<=snap: x=4, y=13. empty=True
+06.04.2021 09:54:01<=snap: x=4, y=14. empty=True
+06.04.2021 09:54:03<=snap: x=4, y=15. empty=True
+06.04.2021 09:54:04<=snap: x=4, y=16. empty=True
+06.04.2021 09:54:04<=direction_x=1
+06.04.2021 09:54:04<=direction_y=1
+06.04.2021 09:54:10<=snap: x=7, y=16. empty=True
+06.04.2021 09:54:10<=direction_y=-1
+06.04.2021 09:54:10<=move: x=7, y=16. empty=True
+06.04.2021 09:54:11<=snap: x=7, y=15. empty=False
+06.04.2021 09:54:13<=snap: x=7, y=14. empty=False
+06.04.2021 09:54:14<=snap: x=7, y=13. empty=False
+06.04.2021 09:54:15<=snap: x=7, y=12. empty=False
+06.04.2021 09:54:17<=snap: x=7, y=11. empty=False
+06.04.2021 09:54:18<=snap: x=7, y=10. empty=True
+06.04.2021 09:54:18<=limit X[1]=7
+06.04.2021 09:54:18<=direction_y=-1
+06.04.2021 09:54:20<=snap: x=8, y=10. empty=True
+06.04.2021 09:54:20<=direction_y=1
+06.04.2021 09:54:20<=move: x=8, y=10. empty=True
+06.04.2021 09:54:22<=snap: x=8, y=11. empty=False
+06.04.2021 09:54:23<=snap: x=8, y=12. empty=False
+06.04.2021 09:54:24<=snap: x=8, y=13. empty=False
+06.04.2021 09:54:26<=snap: x=8, y=14. empty=False
+06.04.2021 09:54:27<=snap: x=8, y=15. empty=False
+06.04.2021 09:54:29<=snap: x=8, y=16. empty=True
+06.04.2021 09:54:29<=limit X[1]=8
+06.04.2021 09:54:29<=direction_y=1
+06.04.2021 09:54:31<=snap: x=9, y=16. empty=True
+06.04.2021 09:54:31<=direction_y=-1
+06.04.2021 09:54:31<=move: x=9, y=16. empty=True
+06.04.2021 09:54:32<=snap: x=9, y=15. empty=True
+06.04.2021 09:54:34<=snap: x=9, y=14. empty=True
+06.04.2021 09:54:35<=snap: x=9, y=13. empty=True
+06.04.2021 09:54:37<=snap: x=9, y=12. empty=True
+06.04.2021 09:54:38<=snap: x=9, y=11. empty=True
+06.04.2021 09:54:40<=snap: x=9, y=10. empty=True

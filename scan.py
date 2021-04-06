@@ -37,7 +37,7 @@ class ScanWindow(QMainWindow):
     # Инициализация
     def __init__(self, main_window):
         super().__init__()
-        self.test = True
+        self.test = False
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
@@ -165,8 +165,8 @@ class ScanWindow(QMainWindow):
         # Доступные для взаимодействия компоненты формы
         self.lbl_coord = QLabel("Текущие координаты:")
         self.btn_init = QPushButton("Инициализация")
-        self.btn_move_mid = QPushButton("Двигать в середину")
         self.btn_move_work_height = QPushButton("Занять рабочую высоту")
+        self.btn_move_mid = QPushButton("Двигать в середину")
         self.btn_move = QPushButton("Двигать в ...")
         self.btn_manual = QPushButton("Ручной режим")
         self.edt_border_x1 = QSpinBox()
@@ -249,10 +249,10 @@ class ScanWindow(QMainWindow):
         right_layout.addWidget(self.btn_init)
         self.btn_move.clicked.connect(self.device_move)
         right_layout.addWidget(self.btn_move)
-        self.btn_move_mid.clicked.connect(self.device_move_mid)
-        right_layout.addWidget(self.btn_move_mid)
         self.btn_move_work_height.clicked.connect(self.device_move_work_height)
         right_layout.addWidget(self.btn_move_work_height)
+        self.btn_move_mid.clicked.connect(self.device_move_mid)
+        right_layout.addWidget(self.btn_move_mid)
 
         self.btn_manual.setCheckable(True)
         self.btn_manual.setChecked(False)
@@ -1059,6 +1059,7 @@ class ScanWindow(QMainWindow):
             os.remove(os.path.join(self.dir_for_img, file))
         file_name = os.path.join("SavedImg", "scan_{0}.jpg".format(files_img_count))
         cv2.imwrite(file_name, snap)
+        # self.save_test_data("file={0}, x={1}, y={2}".format(file_name, current_pos_index[0], current_pos_index[1]))
         img_file_matrix[current_pos_index[0]][current_pos_index[1]] = file_name
         img_obj_matrix[current_pos_index[0]][current_pos_index[1]] = True
         files_img_count += 1
@@ -1097,6 +1098,8 @@ class ScanWindow(QMainWindow):
                                                    mode="discrete", crop=True)
                             file_name = os.path.join("SavedImg", "scan_{0}.jpg".format(files_img_count))
                             cv2.imwrite(file_name, snap)
+                            # self.save_test_data(
+                            # "file={0}, x={1}, y={2}".format(file_name, current_pos_index[0], current_pos_index[1]))
                             img_file_matrix[current_pos_index[0]][current_pos_index[1]] = file_name
                             files_img_count += 1
                             img_is_empty = self.img_is_empty(snap, delta)
@@ -1167,6 +1170,8 @@ class ScanWindow(QMainWindow):
                                            mode="discrete", crop=True)
                     file_name = os.path.join("SavedImg", "scan_{0}.jpg".format(files_img_count))
                     cv2.imwrite(file_name, snap)
+                    # self.save_test_data(
+                    #     "file={0}, x={1}, y={2}".format(file_name, current_pos_index[0], current_pos_index[1]))
                     img_file_matrix[current_pos_index[0]][current_pos_index[1]] = file_name
                     files_img_count += 1
                     img_is_empty = self.img_is_empty(snap, delta)
@@ -1183,8 +1188,9 @@ class ScanWindow(QMainWindow):
         # Теперь надо переименовать нужные файлы и удалить все лишние
         for i in range(snap_area_limits_x[0], snap_area_limits_x[1] + 1):
             for j in range(snap_area_limits_y[0], snap_area_limits_y[1] + 1):
+                j_r = snap_area_limits_y[1] - j
                 os.rename(img_file_matrix[i][j], os.path.join(self.dir_for_img,
-                                                              "S_{0}_{1}.jpg".format(j - snap_area_limits_y[0] + 1,
+                                                              "S_{0}_{1}.jpg".format(j_r + 1,
                                                                                      i - snap_area_limits_x[0] + 1)))
 
         if not os.path.exists(self.dir_for_img):
@@ -1208,23 +1214,25 @@ class ScanWindow(QMainWindow):
         img_format.text = "jpg"
         img_size = Xml.SubElement(elem_img, "ImgSize")
         img_size_width = Xml.SubElement(img_size, "Width")
-        img_size_width.text = str(self.snap_width)
+        # img_size_width.text = str(self.snap_width)
+        img_size_width.text = str(self.program_settings.snap_settings.frame[2]
+                                  - self.program_settings.snap_settings.frame[0])
         img_size_height = Xml.SubElement(img_size, "Height")
-        img_size_height.text = str(self.snap_height)
+        # img_size_height.text = str(self.snap_height)
+        img_size_height.text = str(self.program_settings.snap_settings.frame[3]
+                                   - self.program_settings.snap_settings.frame[1])
         img_con_area = Xml.SubElement(elem_img, "ConnectionArea")
         # HERE orientation param need
         ica_x = Xml.SubElement(img_con_area, "X")
-        # ica_x.text = str(self.micros_controller.frame[0])
-        ica_x.text = str(self.program_settings.snap_settings.frame[0])
+        # ica_x.text = str(self.program_settings.snap_settings.frame[0])
+        ica_x.text = "0"
         ica_y = Xml.SubElement(img_con_area, "Y")
-        # ica_y.text = str(self.micros_controller.frame[1])
-        ica_y.text = str(self.program_settings.snap_settings.frame[1])
+        # ica_y.text = str(self.program_settings.snap_settings.frame[1])
+        ica_y.text = "0"
         ica_width = Xml.SubElement(img_con_area, "Width")
-        # ica_width.text = str(int(self.frame_width_mm * self.pixels_in_mm))
         ica_width.text = str(self.program_settings.snap_settings.frame[2]
                              - self.program_settings.snap_settings.frame[0])
         ica_height = Xml.SubElement(img_con_area, "Height")
-        # ica_height.text = str(int(self.frame_height_mm * self.pixels_in_mm))
         ica_height.text = str(self.program_settings.snap_settings.frame[3]
                               - self.program_settings.snap_settings.frame[1])
 
