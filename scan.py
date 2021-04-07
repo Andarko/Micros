@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import QWidget, QMainWindow, QSizePolicy, QFileDialog, QMes
 from PyQt5.QtWidgets import QHBoxLayout, QVBoxLayout
 from PyQt5.QtWidgets import QAction, QInputDialog, QLineEdit, QLabel, QPushButton, QSpinBox, QFormLayout
 from PyQt5.QtWidgets import QAbstractSpinBox
+from PyQt5.QtWidgets import QScrollArea, QScrollBar
 from PyQt5.QtCore import QEvent, Qt, QTimer, QThread, pyqtSignal, QRect
 import numpy as np
 import cv2
@@ -38,11 +39,16 @@ class ScanWindow(QMainWindow):
     def __init__(self, main_window):
         super().__init__()
         self.test = False
+        self.test_only_camera = True
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
         self.loop = asyncio.get_event_loop()
         self.program_settings = ProgramSettings(self.test)
-        self.lbl_img = LabelImg()
+        # self.lbl_img = LabelImg()
+        self.lbl_img = QLabel(self)
+        self.scroll_area_img = QScrollArea(self)
+        self.scrollbar_img_hor = QScrollBar(Qt.Horizontal, self)
+        self.scrollbar_img_vert = QScrollBar(Qt.Vertical, self)
 
         self.dir_for_img = "SavedImg"
         self.path_for_xml_file = os.path.join(self.dir_for_img, "settings.xml")
@@ -90,7 +96,7 @@ class ScanWindow(QMainWindow):
 
         self.vidik = VideoStreamThread(self.video_stream, self.video_img, self)
         if not self.test:
-            self.vidik.changePixmap.connect(self.lbl_img.setPixmapMy)
+            self.vidik.changePixmap.connect(self.lbl_img.setPixmap)
             self.vidik.start()
 
         self.table_controller = TableController(self.loop, self.program_settings, self.vidik, self.test)
@@ -101,7 +107,8 @@ class ScanWindow(QMainWindow):
         #     self.table_controller.program_settings = self.program_settings
 
         # if not self.table_controller.thread_server or not self.table_controller.thread_server.is_alive():
-        if not self.test:
+
+        if not self.test and not self.test_only_camera:
             self.table_controller.thread_server.start()
         time.sleep(2.0)
         # self.micros_controller.coord_check()
@@ -237,9 +244,24 @@ class ScanWindow(QMainWindow):
         # левый лайаут с изображением
         left_layout = QVBoxLayout()
         central_layout.addLayout(left_layout)
+
+        self.scroll_area_img.setWidget(self.lbl_img)
+        self.scroll_area_img.setWidgetResizable(True)
+        # self.scroll_area_img.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        # self.scroll_area_img.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        self.scrollbar_img_hor.setMaximum(self.scroll_area_img.horizontalScrollBar().maximum())
+        self.scrollbar_img_hor.valueChanged.connect(self.sync_scroll)
+        self.scrollbar_img_vert.setMaximum(self.scroll_area_img.verticalScrollBar().maximum())
+        self.scrollbar_img_vert.valueChanged.connect(self.sync_scroll)
+
         self.lbl_img.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.lbl_img.setStyleSheet("border: 1px solid red")
-        left_layout.addWidget(self.lbl_img)
+
+        # left_layout.addWidget(self.lbl_img)
+        left_layout.addWidget(self.scroll_area_img)
+        # left_layout.addWidget(self.scrollbar_img_hor)
+        # left_layout.addWidget(self.scrollbar_img_vert)
 
         # правый лайаут с панелью
         right_layout = QVBoxLayout()
@@ -316,6 +338,8 @@ class ScanWindow(QMainWindow):
         # self.show()
         # print(self.pixels_in_mm)
 
+    def sync_scroll(self):
+        self.scroll_area_img.horizontalScrollBar().setValue(self.scrollbar_img_hor.value())
 
     def __get_pixels_in_mm(self):
         return self.program_settings.snap_settings.pixels_in_mm
@@ -396,6 +420,7 @@ class ScanWindow(QMainWindow):
             check, img = self.video_stream.read()
             self.lbl_img.setPixmap(self.vidik.numpy_to_pixmap(img))
             self.lbl_img.repaint()
+
             # img = self.vidik.video_img
             # self.video_timer.start()
             if crop:
@@ -1346,14 +1371,14 @@ class ScanWindow(QMainWindow):
     #         self.lbl_img.repaint()
 
 
-class LabelImg(QLabel):
-    def __init__(self):
-        super().__init__()
-        self.can_set = True
-
-    def setPixmapMy(self, a0: QtGui.QPixmap) -> None:
-        if self.can_set:
-            self.setPixmap(a0)
+# class LabelImg(QLabel):
+#     def __init__(self):
+#         super().__init__()
+#         self.can_set = True
+#
+#     def setPixmapMy(self, a0: QtGui.QPixmap) -> None:
+#         if self.can_set:
+#             self.setPixmap(a0)
 
 
 # Класс направления - умеет выдавать следующее и предыдущее направление
@@ -1645,7 +1670,9 @@ class TableController:
         self.loop = loop
         self.execute = False
         # self.thread_server = Thread(target=self.server_start)
+
         self.thread_server = TableServerThread(self.hostname)
+
         # self.thread_server = QThread()
         # self.thread_server.started.connect(self.server_start)
         # self.steps_in_mm = 80
