@@ -21,6 +21,7 @@ from lxml import etree
 from SettingsDialog import SettingsDialog, ProgramSettings
 import xml.etree.ElementTree as XmlET
 import scan
+import random
 
 
 class Point(object):
@@ -649,6 +650,70 @@ class MainWindow(QMainWindow):
 
         self.configFilePath = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "Config.xml")
         self.load_config()
+        # self.dist_task()
+
+    def dist_task(self):
+        a = []
+        k = 4
+        N = 1000000
+        for i in range(N):
+            a.append((i, random.randint(-N, N)))
+        t1 = datetime.datetime.now()
+        # print(a)
+        a.sort(key=lambda x: x[1])
+        # print(a)
+        # b = []
+        # prev = 0
+        # for aa in a:
+        #     b.append(aa[1] - prev)
+        #     prev = aa[1]
+        # print(b)
+        c = []
+        # Основной цикл для обхода всех элементов
+        for i in range(N):
+            if i == 0:
+                l_ind = -1
+            else:
+                l_ind = i
+                # l_dist = b[l_ind]
+                l_dist = a[l_ind][1] - a[l_ind - 1][1]
+
+            if i >= N - 1:
+                r_ind = -1
+            else:
+                r_ind = i + 1
+                # r_dist = b[r_ind]
+                r_dist = a[l_ind][1] - a[l_ind - 1][1]
+            metric = 0
+            for j in range(k):
+                if (l_ind > 0 and l_dist <= r_dist) or r_ind < 0:
+                    metric += l_dist
+                    l_ind -= 1
+                    # l_dist += b[l_ind]
+                    l_dist += a[l_ind][1] - a[l_ind - 1][1]
+                else:
+                    metric += r_dist
+                    r_ind += 1
+                    if r_ind < N:
+                        # r_dist += b[r_ind]
+                        r_dist += a[l_ind][1] - a[l_ind - 1][1]
+                    else:
+                        r_ind = -1
+
+            c.append(metric)
+        # print(c)
+
+        d = []
+        for i in range(N):
+            d.append(0)
+        for i in range(N):
+            d[a[i][0]] = c[i]
+
+
+        # print(d)
+        t2 = datetime.datetime.now()
+        print(t2 - t1)
+        self.close()
 
     def init_ui(self):
         self.setWindowTitle('Micros')

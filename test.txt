@@ -1,0 +1,89 @@
+12.04.2021 08:26:26<=img_empty=False
+12.04.2021 08:26:26<=offset=[0, 0]
+12.04.2021 08:26:26<=direction_x=-1
+12.04.2021 08:26:26<=direction_y=-1
+12.04.2021 08:26:26<=move: x=6, y=12. empty=False
+12.04.2021 08:26:27<=snap: x=6, y=11. empty=False
+12.04.2021 08:26:27<=limit Y[0]=11
+12.04.2021 08:26:29<=snap: x=6, y=10. empty=False
+12.04.2021 08:26:29<=limit Y[0]=10
+12.04.2021 08:26:30<=snap: x=6, y=9. empty=False
+12.04.2021 08:26:30<=limit Y[0]=9
+12.04.2021 08:26:32<=snap: x=6, y=8. empty=True
+12.04.2021 08:26:32<=direction_y=1
+12.04.2021 08:26:32<=move: x=6, y=8. empty=True
+12.04.2021 08:26:32<=move: x=6, y=9. empty=False
+12.04.2021 08:26:32<=move: x=6, y=10. empty=False
+12.04.2021 08:26:32<=move: x=6, y=11. empty=False
+12.04.2021 08:26:32<=move: x=6, y=12. empty=False
+12.04.2021 08:26:37<=snap: x=6, y=13. empty=False
+12.04.2021 08:26:37<=limit Y[1]=13
+12.04.2021 08:26:39<=snap: x=6, y=14. empty=False
+12.04.2021 08:26:39<=limit Y[1]=14
+12.04.2021 08:26:40<=snap: x=6, y=15. empty=False
+12.04.2021 08:26:40<=limit Y[1]=15
+12.04.2021 08:26:42<=snap: x=6, y=16. empty=True
+12.04.2021 08:26:42<=direction_y=1
+12.04.2021 08:26:44<=snap: x=5, y=16. empty=True
+12.04.2021 08:26:44<=direction_y=-1
+12.04.2021 08:26:44<=move: x=5, y=16. empty=True
+12.04.2021 08:26:45<=snap: x=5, y=15. empty=False
+12.04.2021 08:26:46<=snap: x=5, y=14. empty=False
+12.04.2021 08:26:48<=snap: x=5, y=13. empty=False
+12.04.2021 08:26:49<=snap: x=5, y=12. empty=False
+12.04.2021 08:26:51<=snap: x=5, y=11. empty=False
+12.04.2021 08:26:52<=snap: x=5, y=10. empty=False
+12.04.2021 08:26:53<=snap: x=5, y=9. empty=False
+12.04.2021 08:26:55<=snap: x=5, y=8. empty=True
+12.04.2021 08:26:55<=limit X[0]=5
+12.04.2021 08:26:55<=direction_y=-1
+12.04.2021 08:26:57<=snap: x=4, y=8. empty=True
+12.04.2021 08:26:57<=direction_y=1
+12.04.2021 08:26:57<=move: x=4, y=8. empty=True
+12.04.2021 08:26:58<=snap: x=4, y=9. empty=True
+12.04.2021 08:27:00<=snap: x=4, y=10. empty=True
+12.04.2021 08:27:01<=snap: x=4, y=11. empty=True
+12.04.2021 08:27:03<=snap: x=4, y=12. empty=True
+12.04.2021 08:27:04<=snap: x=4, y=13. empty=True
+12.04.2021 08:27:06<=snap: x=4, y=14. empty=True
+12.04.2021 08:27:07<=snap: x=4, y=15. empty=True
+12.04.2021 08:27:09<=snap: x=4, y=16. empty=True
+12.04.2021 08:27:09<=direction_x=1
+12.04.2021 08:27:09<=direction_y=1
+12.04.2021 08:27:14<=snap: x=7, y=16. empty=True
+12.04.2021 08:27:14<=direction_y=-1
+12.04.2021 08:27:14<=move: x=7, y=16. empty=True
+12.04.2021 08:27:16<=snap: x=7, y=15. empty=False
+12.04.2021 08:27:17<=snap: x=7, y=14. empty=False
+12.04.2021 08:27:18<=snap: x=7, y=13. empty=False
+12.04.2021 08:27:20<=snap: x=7, y=12. empty=False
+12.04.2021 08:27:21<=snap: x=7, y=11. empty=False
+12.04.2021 08:27:22<=snap: x=7, y=10. empty=False
+12.04.2021 08:27:24<=snap: x=7, y=9. empty=False
+12.04.2021 08:27:25<=snap: x=7, y=8. empty=True
+12.04.2021 08:27:25<=limit X[1]=7
+12.04.2021 08:27:25<=direction_y=-1
+12.04.2021 08:27:27<=snap: x=8, y=8. empty=True
+12.04.2021 08:27:27<=direction_y=1
+12.04.2021 08:27:27<=move: x=8, y=8. empty=True
+12.04.2021 08:27:29<=snap: x=8, y=9. empty=False
+12.04.2021 08:27:30<=snap: x=8, y=10. empty=False
+12.04.2021 08:27:31<=snap: x=8, y=11. empty=False
+12.04.2021 08:27:33<=snap: x=8, y=12. empty=False
+12.04.2021 08:27:34<=snap: x=8, y=13. empty=False
+12.04.2021 08:27:36<=snap: x=8, y=14. empty=False
+12.04.2021 08:27:37<=snap: x=8, y=15. empty=False
+12.04.2021 08:27:38<=snap: x=8, y=16. empty=True
+12.04.2021 08:27:38<=limit X[1]=8
+12.04.2021 08:27:38<=direction_y=1
+12.04.2021 08:27:40<=snap: x=9, y=16. empty=True
+12.04.2021 08:27:40<=direction_y=-1
+12.04.2021 08:27:40<=move: x=9, y=16. empty=True
+12.04.2021 08:27:42<=snap: x=9, y=15. empty=True
+12.04.2021 08:27:43<=snap: x=9, y=14. empty=True
+12.04.2021 08:27:45<=snap: x=9, y=13. empty=True
+12.04.2021 08:27:46<=snap: x=9, y=12. empty=True
+12.04.2021 08:27:48<=snap: x=9, y=11. empty=True
+12.04.2021 08:27:49<=snap: x=9, y=10. empty=True
+12.04.2021 08:27:51<=snap: x=9, y=9. empty=True
+12.04.2021 08:27:52<=snap: x=9, y=8. empty=True
