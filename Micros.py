@@ -1,3 +1,5 @@
+import multiprocessing
+
 import cv2
 import sys
 import datetime
@@ -17,11 +19,12 @@ from PyQt5.QtGui import QImage
 import PyQt5.QtGui as QtGui
 from PyQt5.QtCore import Qt, QSize, QEvent, QPoint
 from lxml import etree
-
 from SettingsDialog import SettingsDialog, ProgramSettings
 import xml.etree.ElementTree as XmlET
 import scan
 import random
+import modules_sersh4nt.network_handler.network_handler as net_hand
+from multiprocessing import Value
 
 
 class Point(object):
@@ -651,6 +654,17 @@ class MainWindow(QMainWindow):
         self.configFilePath = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "Config.xml")
         self.load_config()
         # self.dist_task()
+        self.neural_train()
+
+    @staticmethod
+    def neural_train():
+        print(os.getcwd())
+        nh = net_hand.NetworkHandler(os.getcwd())
+        current_progress = multiprocessing.Value('i', 0)
+        overall_progress = multiprocessing.Value('i', 0)
+        time_start = multiprocessing.Value('f', 0.0)
+        time_end = multiprocessing.Value('f', 0.0)
+        nh.train_network(current_progress, overall_progress, time_start, time_end)
 
     def dist_task(self):
         a = []

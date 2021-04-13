@@ -4,3 +4,6 @@ venv
 TEMP
 SavedImg/*.jpg
 test.txt
+data
+libs
+models
