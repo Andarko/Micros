@@ -660,11 +660,15 @@ class MainWindow(QMainWindow):
     def neural_train():
         print(os.getcwd())
         nh = net_hand.NetworkHandler(os.getcwd())
-        current_progress = multiprocessing.Value('i', 0)
-        overall_progress = multiprocessing.Value('i', 0)
-        time_start = multiprocessing.Value('f', 0.0)
-        time_end = multiprocessing.Value('f', 0.0)
-        nh.train_network(current_progress, overall_progress, time_start, time_end)
+        # current_progress = multiprocessing.Value('i', 0)
+        # overall_progress = multiprocessing.Value('i', 0)
+        # time_start = multiprocessing.Value('f', 0.0)
+        # time_end = multiprocessing.Value('f', 0.0)
+        current_progress = 0
+        overall_progress = 0
+        time_start = 0.0
+        time_end = 0.0
+        nh.train_network(current_progress, overall_progress, time_start, time_end, batch_size=1)
 
     def dist_task(self):
         a = []

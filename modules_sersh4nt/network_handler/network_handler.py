@@ -104,7 +104,7 @@ class NetworkHandler:
             with torch_distributed_zero_first(rank):
                 attempt_download(weights)  # download if not found locally
             ckpt = torch.load(weights, map_location=self.device)  # load checkpoint
-            model = Model(cfg or ckpt['model'].yaml, ch=3, nc=nc, anchors=hyp_dict.get('anchors')).to(self.device)  # create
+            model = Model(cfg or ckpt['model'].yaml, ch=3, nc=nc).to(self.device)  # create
             exclude = ['anchor'] if cfg or hyp_dict.get('anchors') else []  # exclude keys
             state_dict = ckpt['model'].float().state_dict()  # to FP32
             state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
@@ -189,7 +189,7 @@ class NetworkHandler:
                                                 workers=0)
         mlc = np.concatenate(dataset.labels, 0)[:, 0].max()  # max label class
         nb = len(dataloader)  # number of batches
-        overall_progress.value = nb * epochs
+        overall_progress = nb * epochs
         assert mlc < nc, 'Label class %g exceeds nc=%g in %s. Possible class labels are 0-%g' % (mlc, nc, data, nc - 1)
 
         if rank in [-1, 0]:
@@ -219,7 +219,7 @@ class NetworkHandler:
         model.names = names
 
         # Start training
-        time_start.value = time.time()
+        time_start = time.time()
         # number of warmup iterations, max(3 epochs, 1k iterations)
         nw = max(round(hyp_dict['warmup_epochs'] * nb), 1000)
         maps = np.zeros(nc)  # mAP per class
@@ -260,7 +260,7 @@ class NetworkHandler:
             optimizer.zero_grad()
             for i, (imgs, targets, paths, _) in pbar:  # batch ---------------------------
                 ni = i + nb * epoch  # number integrated batches (since train start)
-                current_progress.value = ni
+                current_progress = ni
 
                 imgs = imgs.to(self.device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
 
@@ -369,14 +369,14 @@ class NetworkHandler:
                                 'wandb_id': None}
 
                     # Save last, best and delete
-                    if current_progress.value % 100:
+                    if current_progress % 100:
                         torch.save(ckpt, last)
                     if best_fitness == fi:
                         torch.save(ckpt, best)
                     del ckpt
             # end epoch ---------------------------------------------------------
         # end training
-        time_end.value = time.time() - time_start.value
+        time_end = time.time() - time_start
         self.load_network()
 
     def index_classes(self, path):
