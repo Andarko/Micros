@@ -653,8 +653,10 @@ class MainWindow(QMainWindow):
 
         self.configFilePath = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), "Config.xml")
         self.load_config()
+        # Задача расчета метрики
         # self.dist_task()
-        self.neural_train()
+        # Test обучение нейронной сети
+        # self.neural_train()
 
     @staticmethod
     def neural_train():
@@ -726,8 +728,6 @@ class MainWindow(QMainWindow):
             d.append(0)
         for i in range(N):
             d[a[i][0]] = c[i]
-
-
         # print(d)
         t2 = datetime.datetime.now()
         print(t2 - t1)

@@ -38,7 +38,7 @@ class ScanWindow(QMainWindow):
     # Инициализация
     def __init__(self, main_window):
         super().__init__()
-        self.test = True
+        self.test = False
         self.test_only_camera = False
         self.main_window = main_window
         # self.micros_controller = TableController('localhost', 5001)
@@ -411,7 +411,7 @@ class ScanWindow(QMainWindow):
             return np.copy(self.test_img[y1_r:y2_r, x1:x2, :])
         else:
             # self.video_timer.stop()
-            time.sleep(0.05)
+            time.sleep(0.15)
             # for i in range(10):
             #     self.video_stream.read()
             # Прогревочные съемки
