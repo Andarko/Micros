@@ -1074,7 +1074,7 @@ class ScanWindow(QMainWindow):
         if img_empty:
             QMessageBox.warning(self, "Внимание!", "Изделие не найдено!", QMessageBox.Ok, QMessageBox.Ok)
             return
-        # Протестируй это!
+
         current_pos_index[0] += offset[0]
         current_pos_index[1] += offset[1]
 
@@ -1082,7 +1082,7 @@ class ScanWindow(QMainWindow):
             os.mkdir(self.dir_for_img)
         for file in os.listdir(self.dir_for_img):
             os.remove(os.path.join(self.dir_for_img, file))
-        file_name = os.path.join("SavedImg", "scan_{0}.jpg".format(files_img_count))
+        file_name = os.path.join(self.dir_for_img, "scan_{0}.jpg".format(files_img_count))
         cv2.imwrite(file_name, snap)
         # self.save_test_data("file={0}, x={1}, y={2}".format(file_name, current_pos_index[0], current_pos_index[1]))
         img_file_matrix[current_pos_index[0]][current_pos_index[1]] = file_name
@@ -1121,7 +1121,7 @@ class ScanWindow(QMainWindow):
                                                     coordinates_y_mm[current_pos_index[1]],
                                                     self.table_controller.coord_mm[2]],
                                                    mode="discrete", crop=True)
-                            file_name = os.path.join("SavedImg", "scan_{0}.jpg".format(files_img_count))
+                            file_name = os.path.join(self.dir_for_img, "scan_{0}.jpg".format(files_img_count))
                             cv2.imwrite(file_name, snap)
                             # self.save_test_data(
                             # "file={0}, x={1}, y={2}".format(file_name, current_pos_index[0], current_pos_index[1]))
@@ -1193,7 +1193,7 @@ class ScanWindow(QMainWindow):
                                             coordinates_y_mm[current_pos_index[1]],
                                             self.table_controller.coord_mm[2]],
                                            mode="discrete", crop=True)
-                    file_name = os.path.join("SavedImg", "scan_{0}.jpg".format(files_img_count))
+                    file_name = os.path.join(self.dir_for_img, "scan_{0}.jpg".format(files_img_count))
                     cv2.imwrite(file_name, snap)
                     # self.save_test_data(
                     #     "file={0}, x={1}, y={2}".format(file_name, current_pos_index[0], current_pos_index[1]))

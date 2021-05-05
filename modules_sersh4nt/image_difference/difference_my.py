@@ -1,37 +1,13 @@
-import random
-
 import cv2
-import colorsys
 import os
 
 import numpy as np
-from thop.vision.basic_hooks import count_convNd_ver2
 
 
-def get_colours():
-    colours = []
-    for i in range(256):
-        h = i / 360.0
-        r, g, b = colorsys.hls_to_rgb(h, 0.5, 1.0)
-        r = int(r * 255)
-        g = int(g * 255)
-        b = int(b * 255)
-        colours.append([r, g, b])
-    return colours
-
-
-def get_difference(img1, img2, colours):
-    # img1.astype(np.int)
-    # img2.astype(np.int)
-    h, w, rate = img1.shape
+def get_difference(img1, img2):
     # Преобразование к типу int для возможности вычитания
     img1 = np.array(img1, dtype='int')
     img2 = np.array(img2, dtype='int')
-    # result = np.zeros((img1.shape[0], img1.shape[1], img1.shape[2]), 'int')
-    # result = np.copy(img1)
-    # img2_int = np.zeros((img2.shape[0], img2.shape[1], img2.shape[2]), 'int')
-    # img2_int = np.copy(img2)
-    # result -= img2_int
     # Берем абсолютные цифры
     absolute = np.abs(img1 - img2)
     # Складываем цифры по трем цветам в единую сущность
@@ -65,17 +41,17 @@ def crop_image(h, w, img):
     return res
 
 
-def get_difference_images(img1, img2, colours):
+def get_difference_images(img1, img2):
     # Обрезка по меньшему размеру
     h, w, _ = img1.shape
     h = min(h, img2.shape[0])
     w = min(w, img2.shape[1])
     crop1 = crop_image(h, w, img1)
     crop2 = crop_image(h, w, img2)
-    blur = []
     blur = [cv2.blur(src=img1, ksize=(3, 3), dst=0), cv2.blur(src=img2, ksize=(3, 3), dst=0)]
+    # blur = [img1, img2]
     # Функция сравнения
-    difference = get_difference(blur[0], blur[1], colours)
+    difference = get_difference(blur[0], blur[1])
     orig_rate = 80
     dif_rate = 80
     return cv2.addWeighted(crop1, orig_rate / 100.0, difference, dif_rate / 100.0, 0.0)
@@ -92,7 +68,7 @@ for root, dirs, files in os.walk("IMG"):
 # Размываем немного картинки для того, чтобы избавиться от шума при сравнении
 
 
-res = get_difference_images(img[0], img[1], get_colours())
+res = get_difference_images(img[0], img[1])
 cv2.imwrite(os.path.join("Z_gray_res.jpg"), res)
 cv2.imshow("result", res)
 cv2.waitKey(0)
